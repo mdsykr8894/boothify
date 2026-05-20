@@ -103,7 +103,7 @@ flutter doctor
 Clone the repository:
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/boothify.git
+git clone https://github.com/mdsykr8894/boothify.git
 cd boothify
 ```
 
