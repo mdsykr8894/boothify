@@ -1,0 +1,52 @@
+name: boothify
+description: "A booth rental application built with Flutter and Firebase."
+
+publish_to: "none"
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  firebase_core: ^4.8.0
+  firebase_auth: ^6.5.0
+  cloud_firestore: ^6.4.0
+  firebase_storage: ^13.4.0
+  image_picker: ^1.1.2
+  provider: ^6.1.5+1
+  go_router: ^17.2.3
+  intl: ^0.20.2
+  cached_network_image: ^3.4.1
+  flutter_svg: ^2.3.0
+  flutter_native_splash: ^2.4.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter:
+  uses-material-design: true
+
+flutter_native_splash:
+  color: "#ffffff"
+  image: assets/images/logo_boothify.png
+  fullscreen: true
+
+  android_12:
+    image: assets/images/logo_boothify.png
+    color: "#ffffff"
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/app_icon.png"
+
+  adaptive_icon_foreground: "assets/images/app_icon.png"
+  adaptive_icon_background: "#ffffff"
