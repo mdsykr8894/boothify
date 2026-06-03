@@ -66,6 +66,8 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
       (user.role == 'Organizer' && user.uid == latestExhibition.organizerId)
     );
 
+    final bool showEditButtons = canEdit && !latestExhibition.isPublished;
+
     final bool isAdmin = user != null && user.role == 'Admin';
     
     return Scaffold(
@@ -77,7 +79,7 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
               title: 'Exhibition Details',
               showBackButton: true,
               actions: [
-                if (canEdit)
+                if (showEditButtons)
                   IconButton(
                     onPressed: () {
                       showModalBottomSheet(
@@ -137,7 +139,7 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
                       // 4. MANAGEMENT ACTIONS
                       _buildSectionHeader('MANAGEMENT ACTIONS'),
                       const SizedBox(height: 12),
-                      _buildManagementActionsCard(context, latestExhibition),
+                      _buildManagementActionsCard(context, latestExhibition, isAdmin),
                       const SizedBox(height: 34),
 
                       // 5. EXHIBITION DETAILS
@@ -145,7 +147,7 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
                       const SizedBox(height: 34),
 
                       // 6. ADDITIONAL DETAILS
-                      _buildAdditionalDetailsSection(context, canEdit, latestExhibition),
+                      _buildAdditionalDetailsSection(context, showEditButtons, latestExhibition),
 
                       // 6. ADMIN CONTEXT (Admin Only)
                       if (isAdmin) ...[
@@ -159,7 +161,7 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
           ],
         ),
       ),
-      bottomNavigationBar: canEdit ? _buildBottomActionBar(context, latestExhibition) : null,
+      bottomNavigationBar: canEdit ? _buildBottomActionBar(context, latestExhibition, isAdmin) : null,
     );
   }
 
@@ -482,7 +484,7 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
     );
   }
 
-  Widget _buildManagementActionsCard(BuildContext context, ExhibitionModel ex) {
+  Widget _buildManagementActionsCard(BuildContext context, ExhibitionModel ex, bool isAdmin) {
     final isFromAdmin = GoRouterState.of(context).matchedLocation.startsWith('/admin');
     
     return Container(
@@ -500,18 +502,20 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
       ),
       child: Column(
         children: [
-          _buildManagementRowItem(
-            context,
-            icon: Icons.map_outlined,
-            title: 'Manage Floor Plan',
-            onTap: () {
-              context.push(
-                isFromAdmin ? AppRoutes.adminBoothSpots : AppRoutes.organizerBoothSpots,
-                extra: ex,
-              );
-            },
-          ),
-          Divider(height: 1, color: Colors.grey.shade100, indent: 82), // Fixed layout value: divider indent 82
+          if (isAdmin) ...[
+            _buildManagementRowItem(
+              context,
+              icon: Icons.map_outlined,
+              title: 'Manage Floor Plan',
+              onTap: () {
+                context.push(
+                  isFromAdmin ? AppRoutes.adminBoothSpots : AppRoutes.organizerBoothSpots,
+                  extra: ex,
+                );
+              },
+            ),
+            Divider(height: 1, color: Colors.grey.shade100, indent: 82), // Fixed layout value: divider indent 82
+          ],
           _buildManagementRowItem(
             context,
             icon: Icons.inventory_2_outlined,
@@ -1049,7 +1053,7 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
     }
   }
 
-  Widget _buildBottomActionBar(BuildContext context, ExhibitionModel ex) {
+  Widget _buildBottomActionBar(BuildContext context, ExhibitionModel ex, bool isAdmin) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -1073,10 +1077,41 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
         top: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
-          child: Row(
-            children: [
-              Expanded(
-                child: AppButton(
+          child: isAdmin
+              ? Row(
+                  children: [
+                    Expanded(
+                      child: AppButton(
+                        text: 'Delete',
+                        isSecondary: true,
+                        color: AppColors.primaryAccent,
+                        height: 56,
+                        borderRadius: 16,
+                        onPressed: () => _handleDelete(context, ex),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ex.isPublished
+                          ? AppButton(
+                              text: 'Unpublish Event',
+                              isSecondary: true,
+                              color: AppColors.primaryText,
+                              height: 56,
+                              borderRadius: 16,
+                              onPressed: () => _showPublishConfirmation(context, ex),
+                            )
+                          : AppButton(
+                              text: 'Publish Event',
+                              color: AppColors.primaryAccent,
+                              height: 56,
+                              borderRadius: 16,
+                              onPressed: () => _showPublishConfirmation(context, ex),
+                            ),
+                    ),
+                  ],
+                )
+              : AppButton(
                   text: 'Delete',
                   isSecondary: true,
                   color: AppColors.primaryAccent,
@@ -1084,28 +1119,6 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
                   borderRadius: 16,
                   onPressed: () => _handleDelete(context, ex),
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: ex.isPublished
-                    ? AppButton(
-                        text: 'Unpublish Event',
-                        isSecondary: true,
-                        color: AppColors.primaryText,
-                        height: 56,
-                        borderRadius: 16,
-                        onPressed: () => _showPublishConfirmation(context, ex),
-                      )
-                    : AppButton(
-                        text: 'Publish Event',
-                        color: AppColors.primaryAccent,
-                        height: 56,
-                        borderRadius: 16,
-                        onPressed: () => _showPublishConfirmation(context, ex),
-                      ),
-              ),
-            ],
-          ),
         ),
       ),
     );

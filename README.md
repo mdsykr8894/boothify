@@ -2,38 +2,88 @@
 
 Boothify is a Flutter-based exhibition booth booking and management application.
 
-It allows organizers to create exhibitions, manage booth packages, design floor plan layouts, and review exhibitor applications. Exhibitors can explore published exhibitions, view booth packages, select booth spots from an interactive floor plan, and submit booth applications.
+It allows administrators to manage the platform, organizers to manage exhibition details and booth packages, and exhibitors to browse published exhibitions, select booth spots, submit booth applications, and track their application status.
 
 ## Features
 
-### Admin / Organizer
+### Guest
 
-- Create, edit, publish, and unpublish exhibitions
-- Open or close booking availability
-- Manage booth packages
-- Create and edit floor plan layouts
-- Add, edit, and delete booth spots
-- View exhibition and application summaries
-- Approve, reject, and manage exhibitor applications
+* Browse published exhibitions without logging in
+* View exhibition details
+* View a read-only booth floor plan
+* Receive login/register guidance before making a booth application
 
 ### Exhibitor
 
-- Browse published exhibitions
-- View exhibition details and booth packages
-- Check booking availability status
-- Select booth spots from an interactive matrix floor plan
-- Submit booth applications
-- Track application status
-- Make payment after approval
+* Register and log in as an exhibitor
+* Browse and search published exhibitions
+* View exhibition details and booth packages
+* Select booth spots from an interactive matrix floor plan
+* View booth availability using color-coded booth statuses
+* Submit booth applications with company details, product details, add-ons, and participation dates
+* Track application status
+* Edit pending applications
+* Cancel applications where allowed
+* Make simulated payment after approval
+
+### Organizer
+
+* Create and manage their own exhibition events
+* Edit exhibition details while the exhibition is still unpublished
+* Manage booth packages, including size, price, and amenities
+* Open or close booking availability
+* View exhibition and application summaries
+* Review exhibitor applications
+* Approve or reject applications with reasons
+* Delete own exhibitions safely when no applications exist
+
+Organizers do not directly publish or unpublish exhibitions. They also do not manage the floor plan layout. These actions are controlled by the administrator to maintain platform-level moderation.
+
+### Admin
+
+* View and manage all exhibitions
+* Publish or unpublish exhibitions
+* Manage floor plan layouts
+* Manage booth spots and floor grid mapping
+* Manage all users
+* Activate or deactivate user accounts
+* View and manage all applications
+* Edit application details when required
+* Monitor overall platform data
+
+## Core Technical Highlights
+
+* Basic search and filter functions
+* Role-based routing for Guest, Exhibitor, Organizer, and Admin
+* Firebase Authentication for user login and registration
+* Cloud Firestore as the main database
+* Firebase Storage for exhibition images
+* Provider state management
+* GoRouter navigation and route guards
+* Interactive booth floor plan using a matrix layout
+* Firestore transaction-based booth application submission
+* Competitor adjacency validation to prevent similar business types from booking adjacent booths
+* Participation date selection within the exhibition date range
+* Safe exhibition deletion with related booth package and booth spot cleanup
+* Published exhibition edit lock to prevent editing public event details directly
+* Lifecycle-safe data loading after app restart or Firebase session restore
+* Simulated payment flow after application approval
 
 ## Tech Stack
 
-- Flutter
-- Dart
-- Firebase Authentication
-- Cloud Firestore
-- Provider state management
-- go_router navigation
+* Flutter
+* Dart
+* Firebase Authentication
+* Cloud Firestore
+* Firebase Storage
+* Provider
+* GoRouter
+* Cached Network Image
+* Flutter SVG
+* Image Picker
+* Intl
+* Flutter Native Splash
+* Flutter Launcher Icons
 
 ## Project Structure
 
@@ -62,40 +112,98 @@ lib/
 
 ### Exhibition Management
 
-Organizers can create exhibitions, edit event details, publish or unpublish exhibitions, and control booking availability.
+Organizers can create exhibitions and manage their own event details while the event is still unpublished. Administrators have global access to all exhibitions and control publication status.
+
+Published exhibitions are locked from direct editing. To modify public exhibition details, the administrator must unpublish the event first.
 
 ### Booth Package Management
 
-Organizers can create and manage booth packages, including booth size, price, and included amenities.
+Organizers can create and manage booth packages for their own exhibitions. Booth packages include booth size, price, and included amenities.
+
+Administrators can also manage booth packages at the system level.
 
 ### Floor Plan Management
 
-The floor plan uses a fixed matrix layout based on rows and columns. Booth spots are displayed using coordinate labels such as `A01`, `A02`, `B01`, and `B02`.
+Boothify uses an interactive matrix-based floor plan. The administrator can configure rows, columns, booth spots, and layout mapping.
+
+Booth spots are displayed using coordinate labels such as:
+
+```text
+A01, A02, B01, B02
+```
+
+This digital layout is used for booth selection, booth status display, and competitor adjacency validation.
 
 ### Booth Selection
 
-Exhibitors can view the same spatial booth layout created by the organizer. Booth statuses are color-coded for clarity, such as available, booked, and selected booth spots.
+Exhibitors can view the spatial booth layout and select available booth spots.
+
+Booth statuses are color-coded for clarity:
+
+* Available
+* Pending
+* Booked
+* Selected
 
 ### Application Management
 
-Exhibitors can submit booth applications. Organizers and admins can review, approve, reject, and manage applications.
+Exhibitors can submit booth applications. Organizers and admins can review, approve, reject, edit, and manage applications based on their role permissions.
+
+### Competitor Adjacency Rule
+
+The system checks nearby booth spots during application submission. If an exhibitor tries to book a booth beside another active application from the same business type, the submission is blocked.
+
+This helps prevent direct competitors from being placed next to each other.
+
+### Participation Date Management
+
+Exhibitors can select participation start and end dates during application submission. The selected dates must stay within the exhibition duration.
+
+These dates are used for organizer and admin reference only. Booth package pricing remains fixed for the full exhibition package.
+
+### Payment Simulation
+
+After an application is approved, exhibitors can perform a simulated payment. The system stores payment information such as payment method, payment date, and transaction ID.
+
+## Database Overview
+
+Boothify uses Firebase Cloud Firestore as the main database.
+
+The logical database can be described as `exhibition_booth_management`, with the following main collections:
+
+* `users`
+* `exhibitions`
+* `booth_packages`
+* `booth_spots`
+* `applications`
+
+These collections act as logical database tables for the application.
 
 ## Getting Started
 
 ### Prerequisites
 
-Make sure you have installed:
+Make sure the following tools are installed:
 
-- Flutter SDK
-- Dart SDK
-- Android Studio or VS Code
-- Firebase CLI
-- FlutterFire CLI, if your Firebase setup uses it
+* Flutter SDK
+* Dart SDK
+* Android Studio or Visual Studio Code
+* Node.js and npm
+* Firebase CLI
+* FlutterFire CLI
+* A Firebase account
 
 Check Flutter installation:
 
 ```bash
 flutter doctor
+```
+
+Check Node.js and npm installation:
+
+```bash
+node --version
+npm --version
 ```
 
 ## Installation
@@ -107,7 +215,7 @@ git clone https://github.com/mdsykr8894/boothify.git
 cd boothify
 ```
 
-Install dependencies:
+Install Flutter dependencies:
 
 ```bash
 flutter pub get
@@ -121,18 +229,149 @@ flutter run
 
 ## Firebase Setup
 
-This project uses Firebase Authentication and Cloud Firestore.
+This project uses Firebase Authentication, Cloud Firestore, and Firebase Storage.
 
-Firebase configuration files are not included in this repository for security reasons. Add your own Firebase configuration based on your local setup.
+Firebase configuration files are not included in this repository for security reasons. You need to connect the project to your own Firebase project before running the app fully.
 
-To configure Firebase using FlutterFire CLI:
+### Step 1: Create a Firebase Project
+
+1. Open Firebase Console in your browser.
+2. Create a new Firebase project.
+3. Use a suitable project name, for example:
+
+```text
+boothify
+```
+
+4. Disable Google Analytics if it is not required.
+5. Wait until the Firebase project is created.
+
+### Step 2: Install Firebase CLI
+
+Install Firebase CLI globally using npm:
+
+```bash
+npm install -g firebase-tools
+```
+
+Check the installation:
+
+```bash
+firebase --version
+```
+
+### Step 3: Login to Firebase
+
+Login to your Firebase account:
+
+```bash
+firebase login
+```
+
+A browser window will open. Sign in using the Google account connected to your Firebase project.
+
+To verify that Firebase CLI can access your account, run:
+
+```bash
+firebase projects:list
+```
+
+You should see your Firebase projects listed in the terminal.
+
+### Step 4: Install FlutterFire CLI
+
+Install FlutterFire CLI:
 
 ```bash
 dart pub global activate flutterfire_cli
+```
+
+Make sure the Dart pub global bin path is available in your terminal.
+
+For macOS or Linux, add this to your shell profile if needed:
+
+```bash
+export PATH="$PATH":"$HOME/.pub-cache/bin"
+```
+
+For Windows, add this path to your environment variables if needed:
+
+```text
+%USERPROFILE%\AppData\Local\Pub\Cache\bin
+```
+
+Check FlutterFire CLI:
+
+```bash
+flutterfire --version
+```
+
+### Step 5: Configure Firebase for Flutter
+
+From the project root folder, run:
+
+```bash
 flutterfire configure
 ```
 
-Then run:
+Select your Firebase project and choose the platforms you want to configure, such as Android, iOS, or Web.
+
+This command generates Firebase configuration files such as:
+
+```text
+lib/firebase_options.dart
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+```
+
+The exact files depend on the selected platforms.
+
+### Step 6: Enable Firebase Authentication
+
+In Firebase Console:
+
+1. Open your Firebase project.
+2. Go to Authentication.
+3. Open the Sign-in method tab.
+4. Enable Email/Password sign-in.
+5. Save the changes.
+
+Boothify uses email and password login for Admin, Organizer, and Exhibitor accounts.
+
+### Step 7: Create Cloud Firestore Database
+
+In Firebase Console:
+
+1. Go to Firestore Database.
+2. Click Create database.
+3. Choose a suitable location.
+4. Start in test mode for local development, or configure your own security rules.
+5. Create the database.
+
+The app uses Firestore collections such as:
+
+```text
+users
+exhibitions
+booth_packages
+booth_spots
+applications
+```
+
+### Step 8: Enable Firebase Storage
+
+In Firebase Console:
+
+1. Go to Storage.
+2. Click Get started.
+3. Choose a suitable location.
+4. Configure rules based on your development or production needs.
+
+Firebase Storage is used for exhibition images.
+
+### Step 9: Run the App
+
+After Firebase is configured, run:
 
 ```bash
 flutter pub get
@@ -160,10 +399,38 @@ flutter clean
 flutter pub get
 ```
 
+## Recommended Test Flow
+
+After setup, test the following flow:
+
+1. Register or log in as an Admin.
+2. Create organizer and exhibitor accounts.
+3. Log in as Organizer and create an exhibition.
+4. Add booth packages.
+5. Log in as Admin and configure the floor plan.
+6. Publish the exhibition as Admin.
+7. Log in as Exhibitor.
+8. Browse the published exhibition.
+9. Select a booth and submit an application.
+10. Log in as Organizer and approve or reject the application.
+11. Log in as Exhibitor and check the application status.
+12. Make payment after approval.
+13. Log in as Admin and verify users, exhibitions, and applications.
+
+## Notes
+
+* Firebase configuration files are not committed for security reasons.
+* You must configure your own Firebase project before running the app fully.
+* Some Firebase rules may need to be adjusted depending on your testing environment.
+* The notification screen exists as a user interface area, while full push notification support can be added as a future enhancement.
+* The floor plan uses an interactive matrix layout rather than a static uploaded image map.
+* Organizers can manage their own exhibition information and booth packages, while administrators control publication and floor plan mapping.
+* Published exhibitions are read-only until they are unpublished by an administrator.
+
 ## Purpose
 
-This project was developed as part of a Mobile and Ubiquitous Computing assignment. The purpose of Boothify is to provide a mobile platform for managing exhibition booth booking activities through multiple user roles.
+The purpose of Boothify is to provide a mobile platform for managing exhibition booth booking activities through multiple user roles.
 
-Boothify focuses on helping organizers manage exhibitions, booth packages, floor plans, and exhibitor applications. It also allows exhibitors to browse published events, view booth availability, select booth spots from an interactive floor plan, and submit booth applications.
+Boothify helps administrators manage the platform, organizers manage exhibition operations, and exhibitors submit booth applications through an interactive booth selection flow.
 
-The project demonstrates the use of Flutter, Firebase, state management, routing, role-based access, and interactive UI design in a complete mobile application workflow.
+The project demonstrates the use of Flutter, Firebase, state management, routing, role-based access control, Firestore database design, transaction-based validation, and interactive UI design in a complete mobile application workflow.
