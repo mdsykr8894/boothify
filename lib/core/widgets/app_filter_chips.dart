@@ -3,6 +3,7 @@ import '../constants/app_colors.dart';
 import '../constants/app_radius.dart';
 import '../constants/app_spacing.dart';
 
+// Reusable horizontal filter chips.
 class AppFilterChips extends StatelessWidget {
   final String selectedValue;
   final List<String> filters;
@@ -22,6 +23,7 @@ class AppFilterChips extends StatelessWidget {
     final List<String> displayItems;
     final List<String> overflowItems;
 
+    // Split visible filters and overflow filters.
     if (moreFilters.isNotEmpty) {
       displayItems = filters;
       overflowItems = moreFilters;
@@ -44,32 +46,40 @@ class AppFilterChips extends StatelessWidget {
         const double maxPadding = 20.0;
         double dynamicPadding = basePadding;
 
-        final int chipCount = displayItems.length + (overflowItems.isNotEmpty ? 1 : 0);
+        final int chipCount =
+            displayItems.length + (overflowItems.isNotEmpty ? 1 : 0);
 
+        // Adjust chip padding when there is extra space.
         if (chipCount >= 4) {
-          final double availableWidth = constraints.maxWidth - (AppSpacing.screenHorizontal * 2);
-          
+          final double availableWidth =
+              constraints.maxWidth - (AppSpacing.screenHorizontal * 2);
+
           double totalEstimatedWidth = 0.0;
           for (final filter in displayItems) {
             final double textWidth = filter.length * 8.0;
             final double baseChipWidth = textWidth + (2 * basePadding);
-            final double finalChipWidth = filter == 'All' ? baseChipWidth.clamp(72.0, double.infinity) : baseChipWidth;
+            final double finalChipWidth = filter == 'All'
+                ? baseChipWidth.clamp(72.0, double.infinity)
+                : baseChipWidth;
             totalEstimatedWidth += finalChipWidth;
           }
-          
+
           if (overflowItems.isNotEmpty) {
             final double textWidth = 4 * 8.0;
-            final double extraDecorations = 18.0 + 4.0 + (isSelectedInMore ? 12.0 : 0.0);
-            final double moreChipWidth = textWidth + extraDecorations + (2 * basePadding);
+            final double extraDecorations =
+                18.0 + 4.0 + (isSelectedInMore ? 12.0 : 0.0);
+            final double moreChipWidth =
+                textWidth + extraDecorations + (2 * basePadding);
             totalEstimatedWidth += moreChipWidth;
           }
-          
+
           totalEstimatedWidth += (chipCount - 1) * 8.0;
 
           if (totalEstimatedWidth < availableWidth) {
             final double remainingSpace = availableWidth - totalEstimatedWidth;
             final double extraPadding = remainingSpace / (2 * chipCount);
-            dynamicPadding = (basePadding + extraPadding).clamp(basePadding, maxPadding);
+            dynamicPadding =
+                (basePadding + extraPadding).clamp(basePadding, maxPadding);
           }
         }
 
@@ -87,6 +97,7 @@ class AppFilterChips extends StatelessWidget {
           );
         }
 
+        // Add more filter menu when needed.
         if (overflowItems.isNotEmpty) {
           chips.add(
             _buildMoreChip(
@@ -129,6 +140,7 @@ class AppFilterChips extends StatelessWidget {
     final Color textColor;
     final FontWeight fontWeight;
 
+    // Apply selected chip styling.
     if (isSelected) {
       if (isAll) {
         backgroundColor = AppColors.primaryText;
@@ -187,6 +199,7 @@ class AppFilterChips extends StatelessWidget {
     final Color dotColor;
     final FontWeight fontWeight;
 
+    // Apply selected more chip styling.
     if (isSelected) {
       backgroundColor = AppColors.primaryAccent.withValues(alpha: 0.08);
       borderColor = AppColors.primaryAccent;

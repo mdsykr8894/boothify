@@ -24,22 +24,26 @@ class ExploreScreen extends StatefulWidget {
 class _ExploreScreenState extends State<ExploreScreen> {
   String _selectedFilter = 'All';
   String _searchQuery = '';
+  bool _hasFetchedUsers = false;
 
   String _getOrganizerName(String organizerId, List<UserModel> users) {
+    // Find organizer display name from user list.
     final user = users.firstWhere(
       (u) => u.uid == organizerId,
       orElse: () => UserModel(uid: '', name: '', email: '', role: 'Organizer'),
     );
+
+    // Prefer organization name if available.
     return user.organizationName?.isNotEmpty == true
         ? user.organizationName!
         : user.name;
   }
 
-  bool _hasFetchedUsers = false;
-
   @override
   void initState() {
     super.initState();
+
+    // Fetch published exhibitions after first frame.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ExhibitionProvider>().fetchPublishedExhibitions();
     });
@@ -48,11 +52,17 @@ class _ExploreScreenState extends State<ExploreScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+
+    // Watch auth state before fetching user data.
     final auth = context.watch<AuthProvider>();
+
     if (!auth.isInitialized) {
+      // Reset user fetch flag while auth is still loading.
       _hasFetchedUsers = false;
     } else if (!_hasFetchedUsers) {
+      // Fetch users only once after auth is ready.
       _hasFetchedUsers = true;
+
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         context.read<UserProvider>().fetchAllUsers();
@@ -61,24 +71,28 @@ class _ExploreScreenState extends State<ExploreScreen> {
   }
 
   void _fetchExhibitions() {
+    // Refresh exhibitions and organizer data.
     context.read<ExhibitionProvider>().fetchPublishedExhibitions();
     context.read<UserProvider>().fetchAllUsers();
   }
 
   Widget _buildSearchHeader() {
+    // Check whether search query exists.
     final bool hasQuery = _searchQuery.trim().isNotEmpty;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.screenHorizontal,
+      ),
       child: Container(
-        height: 56, // Premium 56px height
+        height: 56,
         decoration: BoxDecoration(
-          color: Colors.white, // Pure white background
-          borderRadius: BorderRadius.circular(100), // Rounded pill shape
-          border: Border.all(color: Colors.grey.shade100, width: 1.5), // Subtle border
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(100),
+          border: Border.all(color: Colors.grey.shade100, width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04), // Soft shadow
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -86,27 +100,34 @@ class _ExploreScreenState extends State<ExploreScreen> {
         ),
         child: InkWell(
           onTap: () async {
+            // Open full search page and wait for result.
             final result = await Navigator.push<Map<String, String>>(
               context,
               PageRouteBuilder(
                 opaque: true,
                 barrierColor: Colors.white,
                 transitionDuration: const Duration(milliseconds: 200),
-                pageBuilder: (context, animation, secondaryAnimation) => FadeTransition(
-                  opacity: animation,
-                  child: ScaleTransition(
-                    scale: Tween<double>(begin: 0.98, end: 1.0).animate(
-                      CurvedAnimation(parent: animation, curve: Curves.easeOut),
+                pageBuilder: (context, animation, secondaryAnimation) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: ScaleTransition(
+                      scale: Tween<double>(begin: 0.98, end: 1.0).animate(
+                        CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeOut,
+                        ),
+                      ),
+                      child: ExploreSearchPage(
+                        initialQuery: _searchQuery,
+                        initialFilter: _selectedFilter,
+                      ),
                     ),
-                    child: ExploreSearchPage(
-                      initialQuery: _searchQuery,
-                      initialFilter: _selectedFilter,
-                    ),
-                  ),
-                ),
+                  );
+                },
               ),
             );
 
+            // Update search query and filter from search page result.
             if (result != null) {
               setState(() {
                 _searchQuery = result['query'] ?? '';
@@ -119,29 +140,34 @@ class _ExploreScreenState extends State<ExploreScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 18),
             child: Row(
               children: [
-                // Left Search Icon
+                // Search icon.
                 Icon(
                   Icons.search,
-                  color: hasQuery ? AppColors.primaryAccent : Colors.grey.shade400,
+                  color: hasQuery
+                      ? AppColors.primaryAccent
+                      : Colors.grey.shade400,
                   size: 22,
                 ),
                 const SizedBox(width: 12),
-                
-                // Middle Placeholder or Query text
+
+                // Search text or placeholder.
                 Expanded(
                   child: Text(
                     hasQuery ? _searchQuery : 'Search exhibitions...',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: hasQuery ? AppColors.primaryText : Colors.grey.shade400,
+                      color: hasQuery
+                          ? AppColors.primaryText
+                          : Colors.grey.shade400,
                       fontSize: 14,
-                      fontWeight: hasQuery ? FontWeight.bold : FontWeight.w500,
+                      fontWeight:
+                          hasQuery ? FontWeight.bold : FontWeight.w500,
                     ),
                   ),
                 ),
-                
-                // Quick clear action icon inside the search bar header if not empty
+
+                // Clear search query button.
                 if (hasQuery) ...[
                   IconButton(
                     onPressed: () {
@@ -158,18 +184,20 @@ class _ExploreScreenState extends State<ExploreScreen> {
                   const SizedBox(width: 10),
                 ],
 
-                // Vertical Divider near the right
+                // Divider before filter icon.
                 Container(
                   height: 24,
                   width: 1,
                   color: Colors.grey.shade200,
                 ),
                 const SizedBox(width: 14),
-                
-                // Far Right Filter Icon (Boothify pink accent)
+
+                // Filter icon.
                 Icon(
                   Icons.tune_outlined,
-                  color: hasQuery ? AppColors.primaryAccent : Colors.grey.shade500,
+                  color: hasQuery
+                      ? AppColors.primaryAccent
+                      : Colors.grey.shade500,
                   size: 22,
                 ),
               ],
@@ -182,23 +210,28 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Get published exhibitions and loading state.
     final exhibitionProvider = context.watch<ExhibitionProvider>();
     final allPublished = exhibitionProvider.publishedExhibitions;
     final isLoading = exhibitionProvider.isLoading;
+
+    // Get user list for organizer name lookup.
     final List<UserModel> users = context.watch<UserProvider>().users;
 
+    // Prepare lowercase search query.
     final String query = _searchQuery.trim().toLowerCase();
 
-    // 1. Filter all published exhibitions by search keyword
+    // Filter exhibitions by search keyword.
     final List<ExhibitionModel> searchFiltered = allPublished.where((e) {
       if (query.isEmpty) return true;
-      
-      final String orgName = _getOrganizerName(e.organizerId, users).toLowerCase();
+
+      final String orgName =
+          _getOrganizerName(e.organizerId, users).toLowerCase();
       final String name = e.name.toLowerCase();
       final String cat = e.category.toLowerCase();
       final String loc = e.location.toLowerCase();
       final String type = e.eventType.toLowerCase();
-      
+
       return name.contains(query) ||
           cat.contains(query) ||
           loc.contains(query) ||
@@ -206,11 +239,13 @@ class _ExploreScreenState extends State<ExploreScreen> {
           orgName.contains(query);
     }).toList();
 
-    // 2. Partition into status-specific sublists for content rendering
+    // Split exhibitions by event status.
     final upcomingEvents = searchFiltered.where((e) => e.isUpcoming).toList()
       ..sort((a, b) => a.startDate.compareTo(b.startDate));
+
     final ongoingEvents = searchFiltered.where((e) => e.isOngoing).toList()
       ..sort((a, b) => a.startDate.compareTo(b.startDate));
+
     final completedEvents = searchFiltered.where((e) => e.isCompleted).toList()
       ..sort((a, b) => b.endDate.compareTo(a.endDate));
 
@@ -222,41 +257,49 @@ class _ExploreScreenState extends State<ExploreScreen> {
           child: isLoading
               ? const AppLoading()
               : ListView(
-                  physics: const ClampingScrollPhysics(), // Consistent scroll behaviors
+                  physics: const ClampingScrollPhysics(),
                   children: [
-                    // Top safe area spacing below status bar
                     const SizedBox(height: 16),
-                    
-                    // 1. Redesigned Search Bar Header
-                    _buildSearchHeader(),
-                    const SizedBox(height: 22), // Search bar to hero card gap
 
-                    // 2. Hero Card (Visually persistent across ALL filters, premium dark promotional style)
+                    // Search and filter header.
+                    _buildSearchHeader(),
+                    const SizedBox(height: 22),
+
+                    // Summary hero card.
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.screenHorizontal,
+                      ),
                       child: AppHeroCard(
                         title: 'Live Now',
-                        icon: Icons.auto_awesome, // Sparkle icon
+                        icon: Icons.auto_awesome,
                         mainValue: 'Discover Modern\nExhibitions',
-                        subtitle: '${ongoingEvents.length} ongoing • ${upcomingEvents.length} upcoming',
+                        subtitle:
+                            '${ongoingEvents.length} ongoing • ${upcomingEvents.length} upcoming',
                         ctaText: 'Explore Now',
                         isPromotional: true,
-                        isDark: true, // Force premium dark layout
+                        isDark: true,
                       ),
                     ),
-                    const SizedBox(height: 24), // Hero to filters gap
+                    const SizedBox(height: 24),
 
-                    // 3. Filter Chips
+                    // Event filter chips.
                     AppFilterChips(
                       selectedValue: _selectedFilter,
                       filters: const ['All', 'Upcoming', 'Ongoing'],
                       moreFilters: const ['Nearby', 'Completed'],
-                      onChanged: (val) => setState(() => _selectedFilter = val),
+                      onChanged: (val) {
+                        setState(() => _selectedFilter = val);
+                      },
                     ),
                     const SizedBox(height: AppSpacing.s),
 
-                    // 4. Event Content/Cards dynamically bound by filter selection
-                    _buildContent(upcomingEvents, ongoingEvents, completedEvents),
+                    // Render event list based on selected filter.
+                    _buildContent(
+                      upcomingEvents,
+                      ongoingEvents,
+                      completedEvents,
+                    ),
                   ],
                 ),
         ),
@@ -269,6 +312,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
     List<ExhibitionModel> ongoing,
     List<ExhibitionModel> completed,
   ) {
+    // Nearby feature placeholder.
     if (_selectedFilter == 'Nearby') {
       return const Padding(
         padding: EdgeInsets.only(top: 40),
@@ -280,8 +324,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
       );
     }
 
+    // Check if empty state is caused by search.
     final bool hasSearchQuery = _searchQuery.trim().isNotEmpty;
 
+    // Show empty state when no exhibitions match.
     if (upcoming.isEmpty && ongoing.isEmpty && completed.isEmpty) {
       return Padding(
         padding: const EdgeInsets.only(top: 40),
@@ -295,17 +341,22 @@ class _ExploreScreenState extends State<ExploreScreen> {
       );
     }
 
+    // Show only upcoming events.
     if (_selectedFilter == 'Upcoming') {
       return _buildVerticalList(upcoming, 'No Upcoming Exhibitions');
     }
+
+    // Show only ongoing events.
     if (_selectedFilter == 'Ongoing') {
       return _buildVerticalList(ongoing, 'No Ongoing Exhibitions');
     }
+
+    // Show only completed events.
     if (_selectedFilter == 'Completed') {
       return _buildVerticalList(completed, 'No Completed Exhibitions');
     }
 
-    // "All" view with grouped horizontal sections of large discovery cards
+    // Show all events grouped by status.
     return Padding(
       padding: const EdgeInsets.only(
         top: AppSpacing.m,
@@ -338,8 +389,11 @@ class _ExploreScreenState extends State<ExploreScreen> {
   }
 
   Widget _buildSectionHeader(String title) {
+    // Build section title for grouped event lists.
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.screenHorizontal,
+      ),
       child: Text(
         title,
         style: const TextStyle(
@@ -353,12 +407,15 @@ class _ExploreScreenState extends State<ExploreScreen> {
   }
 
   Widget _buildHorizontalScroll(List<ExhibitionModel> events) {
+    // Build horizontal event card list.
     return SizedBox(
       height: 355,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         physics: const ClampingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.screenHorizontal,
+        ),
         itemCount: events.length,
         itemBuilder: (context, index) {
           return Padding(
@@ -374,6 +431,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
   }
 
   Widget _buildVerticalList(List<ExhibitionModel> events, String emptyMsg) {
+    // Show empty message if selected filter has no events.
     if (events.isEmpty) {
       return Padding(
         padding: const EdgeInsets.only(top: 40),
@@ -385,6 +443,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
       );
     }
 
+    // Build vertical event card list.
     return Padding(
       padding: const EdgeInsets.only(
         left: AppSpacing.screenHorizontal,
@@ -393,10 +452,12 @@ class _ExploreScreenState extends State<ExploreScreen> {
         bottom: AppSpacing.s,
       ),
       child: Column(
-        children: events.map((e) => Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: ExhibitionCard(exhibition: e),
-        )).toList(),
+        children: events.map((e) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: ExhibitionCard(exhibition: e),
+          );
+        }).toList(),
       ),
     );
   }

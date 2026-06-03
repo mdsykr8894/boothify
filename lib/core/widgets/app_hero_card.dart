@@ -2,15 +2,16 @@ import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_radius.dart';
 
+// Reusable hero card.
 class AppHeroCard extends StatelessWidget {
-  final String title; // Badge pill text (e.g. "Platform", "Organizer", "Live Now")
-  final String mainValue; // Headline text
-  final String? subtitle; // Short supporting description text
-  final IconData? icon; // Optional badge icon (e.g. Icons.auto_awesome, Icons.shield_outlined)
-  final bool isDark; // Signature compatibility
-  final List<Widget>? stats; // Optional bottom stats widgets
-  final String? ctaText; // Optional bottom CTA text
-  final bool isPromotional; // Signature compatibility
+  final String title;
+  final String mainValue;
+  final String? subtitle;
+  final IconData? icon;
+  final bool isDark;
+  final List<Widget>? stats;
+  final String? ctaText;
+  final bool isPromotional;
   final VoidCallback? onTap;
 
   const AppHeroCard({
@@ -28,12 +29,12 @@ class AppHeroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const Color backgroundColor = AppColors.primaryText; // 0xFF222222 premium dark charcoal
+    const Color backgroundColor = AppColors.primaryText;
     const Color textColor = Colors.white;
     final Color secondaryTextColor = Colors.white.withValues(alpha: 0.8);
     const Color eyebrowColor = AppColors.primaryAccent;
 
-    // Abstract overlapping circular right-side visual anchor to balance left-heavy layouts
+    // Add decorative circle background.
     final Widget rightVisualAnchor = Positioned(
       right: -30,
       bottom: -30,
@@ -45,7 +46,7 @@ class AppHeroCard extends StatelessWidget {
               height: 150,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: eyebrowColor.withValues(alpha: 0.05), // Extremely low-opacity pink circle
+                color: eyebrowColor.withValues(alpha: 0.05),
               ),
             ),
             Positioned(
@@ -56,7 +57,7 @@ class AppHeroCard extends StatelessWidget {
                 height: 100,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.02), // Subdued white inner circle accent
+                  color: Colors.white.withValues(alpha: 0.02),
                 ),
               ),
             ),
@@ -65,22 +66,22 @@ class AppHeroCard extends StatelessWidget {
       ),
     );
 
-    // Main card content area
+    // Build hero card content.
     Widget cardContent = Container(
-      constraints: const BoxConstraints(minHeight: 230), // Consistent 230px minimum height globally
-      padding: const EdgeInsets.all(24.0), // Consistent 24px padding across screens
+      constraints: const BoxConstraints(minHeight: 230),
+      padding: const EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween, // Space out top text and bottom rows naturally
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. Premium Unified Translucent Pink Badge Pill
+              // Show badge label.
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: eyebrowColor.withValues(alpha: 0.15), // Translucent pink
+                  color: eyebrowColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(100),
                   border: Border.all(
                     color: eyebrowColor.withValues(alpha: 0.4),
@@ -92,7 +93,7 @@ class AppHeroCard extends StatelessWidget {
                   children: [
                     if (icon != null) ...[
                       Icon(
-                        icon, // Dynamic pill badge icon
+                        icon,
                         size: 13,
                         color: eyebrowColor,
                       ),
@@ -110,9 +111,8 @@ class AppHeroCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 18), // Top badge to headline gap: 18px
-              
-              // 2. Large Bold Main Headline (Wraps naturally to 2 lines)
+              const SizedBox(height: 18),
+
               Text(
                 mainValue,
                 style: const TextStyle(
@@ -123,16 +123,16 @@ class AppHeroCard extends StatelessWidget {
                   height: 1.2,
                 ),
               ),
-              
-              // 3. Short Supporting Subtext (Light grey / white with opacity)
+
+              // Show optional subtitle.
               if (subtitle != null && subtitle!.isNotEmpty) ...[
-                const SizedBox(height: 10), // Headline to subtext gap: 10px
+                const SizedBox(height: 10),
                 Text(
                   subtitle!,
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
-                    color: secondaryTextColor, // Highly readable white/light-grey
+                    color: secondaryTextColor,
                     height: 1.4,
                   ),
                 ),
@@ -140,16 +140,16 @@ class AppHeroCard extends StatelessWidget {
             ],
           ),
 
-          // 4. Bottom Info Row: CTA (Explore) or Stats (Dashboards)
+          // Show CTA row or stats row.
           if (ctaText != null) ...[
-            const SizedBox(height: 20), // Subtext to bottom CTA gap
+            const SizedBox(height: 20),
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   ctaText!,
                   style: const TextStyle(
-                    color: Colors.white, // Pure white like the reference
+                    color: Colors.white,
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                     letterSpacing: -0.2,
@@ -158,13 +158,13 @@ class AppHeroCard extends StatelessWidget {
                 const SizedBox(width: 6),
                 const Icon(
                   Icons.arrow_forward,
-                  color: eyebrowColor, // Elegant brand pink arrow
+                  color: eyebrowColor,
                   size: 16,
                 ),
               ],
             ),
           ] else if (stats != null && stats!.isNotEmpty) ...[
-            const SizedBox(height: 20), // Subtext to bottom stats gap
+            const SizedBox(height: 20),
             Wrap(
               spacing: 24,
               runSpacing: 12,
@@ -180,7 +180,7 @@ class AppHeroCard extends StatelessWidget {
       width: double.infinity,
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(AppRadius.xl), // Premium 24px radius
+        borderRadius: BorderRadius.circular(AppRadius.xl),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.08),
@@ -194,10 +194,9 @@ class AppHeroCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.xl),
         child: Stack(
           children: [
-            // Abstract circular right-side visual anchor to balance left-heavy layout
             rightVisualAnchor,
-            
-            // Hero card main contents
+
+            // Make hero card tappable when action exists.
             onTap != null
                 ? InkWell(
                     onTap: onTap,

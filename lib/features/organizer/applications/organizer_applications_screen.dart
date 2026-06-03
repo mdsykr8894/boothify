@@ -11,15 +11,21 @@ import '../../../providers/exhibition_provider.dart';
 import '../../../providers/user_provider.dart';
 import 'widgets/organizer_application_card.dart';
 
+// Display applications for organizer exhibitions.
 class OrganizerApplicationsScreen extends StatefulWidget {
   const OrganizerApplicationsScreen({super.key});
 
   @override
-  State<OrganizerApplicationsScreen> createState() => _OrganizerApplicationsScreenState();
+  State<OrganizerApplicationsScreen> createState() =>
+      _OrganizerApplicationsScreenState();
 }
 
-class _OrganizerApplicationsScreenState extends State<OrganizerApplicationsScreen> {
+class _OrganizerApplicationsScreenState
+    extends State<OrganizerApplicationsScreen> {
+  // Track selected application filter.
   String _selectedFilter = 'All';
+
+  // Track last organizer data fetch.
   String? _lastFetchedUserId;
 
   @override
@@ -30,11 +36,16 @@ class _OrganizerApplicationsScreenState extends State<OrganizerApplicationsScree
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+
     final user = context.watch<AuthProvider>().currentUser;
+
+    // Reset fetch state when user logs out.
     if (user == null) {
       _lastFetchedUserId = null;
     } else if (user.uid != _lastFetchedUserId) {
       _lastFetchedUserId = user.uid;
+
+      // Fetch applications after first frame.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         _fetchApplications();
@@ -44,7 +55,9 @@ class _OrganizerApplicationsScreenState extends State<OrganizerApplicationsScree
 
   void _fetchApplications() {
     final user = context.read<AuthProvider>().currentUser;
+
     if (user != null) {
+      // Load organizer applications and lookup data.
       context.read<ApplicationProvider>().fetchOrganizerApplications(user.uid);
       context.read<ExhibitionProvider>().fetchAllExhibitions();
       context.read<UserProvider>().fetchAllUsers();
@@ -55,7 +68,7 @@ class _OrganizerApplicationsScreenState extends State<OrganizerApplicationsScree
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
     final appProvider = context.watch<ApplicationProvider>();
-    
+
     final user = authProvider.currentUser;
     final isLoading = appProvider.isLoading;
     final allApps = appProvider.organizerApplications;
@@ -64,7 +77,7 @@ class _OrganizerApplicationsScreenState extends State<OrganizerApplicationsScree
       return const Scaffold(body: Center(child: Text('Login Required')));
     }
 
-    // Filter applications
+    // Filter applications by selected status.
     final applications = allApps.where((app) {
       if (_selectedFilter == 'All') return true;
       return app.status == _selectedFilter;
@@ -76,6 +89,8 @@ class _OrganizerApplicationsScreenState extends State<OrganizerApplicationsScree
           children: [
             const AppPageHeader(title: 'Applications'),
             const SizedBox(height: AppSpacing.s),
+
+            // Show application status filters.
             AppFilterChips(
               selectedValue: _selectedFilter,
               filters: const ['All', 'Pending', 'Approved'],
@@ -87,35 +102,40 @@ class _OrganizerApplicationsScreenState extends State<OrganizerApplicationsScree
               child: isLoading
                   ? const AppLoading()
                   : applications.isEmpty
-                      ? AppEmptyState(
-                          title: _selectedFilter == 'All'
-                              ? 'No Applications'
-                              : 'No $_selectedFilter Applications',
-                          message: 'Applications will appear here when exhibitors submit bookings.',
-                          icon: Icons.assignment_outlined,
-                        )
-                      : ScrollConfiguration(
-                          behavior: const ScrollBehavior().copyWith(overscroll: false),
-                          child: RefreshIndicator(
-                            onRefresh: () async => _fetchApplications(),
-                            child: ListView.builder(
-                              physics: const ClampingScrollPhysics(),
-                              padding: const EdgeInsets.only(
-                                left: AppSpacing.screenHorizontal,
-                                right: AppSpacing.screenHorizontal,
-                                top: AppSpacing.m,
-                                bottom: 100,
-                              ),
-                              itemCount: applications.length,
-                              itemBuilder: (context, index) {
-                                return OrganizerApplicationCard(
-                                  application: applications[index],
-                                  organizerId: user.uid,
-                                );
-                              },
-                            ),
+                  ? AppEmptyState(
+                      title: _selectedFilter == 'All'
+                          ? 'No Applications'
+                          : 'No $_selectedFilter Applications',
+                      message:
+                          'Applications will appear here when exhibitors submit bookings.',
+                      icon: Icons.assignment_outlined,
+                    )
+                  : ScrollConfiguration(
+                      behavior: const ScrollBehavior().copyWith(
+                        overscroll: false,
+                      ),
+                      child: RefreshIndicator(
+                        // Refresh organizer applications.
+                        onRefresh: () async => _fetchApplications(),
+                        child: ListView.builder(
+                          physics: const ClampingScrollPhysics(),
+                          padding: const EdgeInsets.only(
+                            left: AppSpacing.screenHorizontal,
+                            right: AppSpacing.screenHorizontal,
+                            top: AppSpacing.m,
+                            bottom: 100,
                           ),
+                          itemCount: applications.length,
+                          itemBuilder: (context, index) {
+                            // Show organizer application card.
+                            return OrganizerApplicationCard(
+                              application: applications[index],
+                              organizerId: user.uid,
+                            );
+                          },
                         ),
+                      ),
+                    ),
             ),
           ],
         ),

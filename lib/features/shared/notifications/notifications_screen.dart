@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/widgets/app_empty_state.dart';
 import '../../../core/widgets/app_page_header.dart';
 
+// Display user notifications.
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({super.key});
 
@@ -15,6 +16,8 @@ class NotificationsScreen extends StatelessWidget {
               title: 'Notifications',
               showBackButton: true,
             ),
+
+            // Show empty notifications state.
             Expanded(
               child: AppEmptyState(
                 title: 'No Notifications',

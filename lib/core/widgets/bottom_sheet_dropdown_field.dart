@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 
+// Reusable dropdown field for bottom sheet forms.
 class BottomSheetDropdownField<T> extends StatelessWidget {
   final String label;
   final String hint;
@@ -24,6 +25,7 @@ class BottomSheetDropdownField<T> extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Show dropdown label.
         Text(
           label,
           style: const TextStyle(
@@ -33,11 +35,21 @@ class BottomSheetDropdownField<T> extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
+
+        // Show dropdown input.
         DropdownButtonFormField<T>(
           initialValue: value,
-          hint: Text(hint, style: TextStyle(color: Colors.grey.shade400, fontSize: 16)),
+          hint: Text(
+            hint,
+            style: TextStyle(
+              color: Colors.grey.shade400,
+              fontSize: 16,
+            ),
+          ),
           borderRadius: BorderRadius.circular(16),
           items: items,
+
+          // Update selected dropdown value.
           onChanged: onChanged,
           validator: validator,
         ),

@@ -12,6 +12,7 @@ import '../../../providers/exhibition_provider.dart';
 import '../../../providers/user_provider.dart';
 import '../../shared/wrappers/admin_wrapper.dart';
 
+// Display admin dashboard overview.
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
 
@@ -20,6 +21,7 @@ class AdminDashboardScreen extends StatefulWidget {
 }
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
+  // Track whether dashboard data has been fetched.
   bool _hasFetched = false;
 
   @override
@@ -30,11 +32,18 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+
     final auth = context.watch<AuthProvider>();
-    if (!auth.isInitialized || auth.currentUser == null || auth.currentUser?.role != 'Admin') {
+
+    // Reset fetch state when admin session is unavailable.
+    if (!auth.isInitialized ||
+        auth.currentUser == null ||
+        auth.currentUser?.role != 'Admin') {
       _hasFetched = false;
     } else if (!_hasFetched) {
       _hasFetched = true;
+
+      // Fetch dashboard data after first frame.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         _fetchData();
@@ -43,6 +52,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   void _fetchData() {
+    // Load exhibitions, applications, and users.
     context.read<ExhibitionProvider>().fetchAllExhibitions();
     context.read<ApplicationProvider>().fetchAllApplications();
     context.read<UserProvider>().fetchAllUsers();
@@ -54,16 +64,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.l),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFFBEB), // Soft warm cream background
+        color: const Color(0xFFFFFBEB),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.orange.shade200, // Subtle orange border
-          width: 1.0,
-        ),
+        border: Border.all(color: Colors.orange.shade200, width: 1.0),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
+          // Navigate to applications tab.
           onTap: () {
             context.findAncestorStateOfType<AdminWrapperState>()?.setIndex(2);
           },
@@ -72,7 +80,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             child: Row(
               children: [
                 Icon(
-                  Icons.flash_on_rounded, // Lightning icon
+                  Icons.flash_on_rounded,
                   color: Colors.orange.shade700,
                   size: 28,
                 ),
@@ -150,7 +158,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 icon: Icons.calendar_today_outlined,
                 label: 'Manage Exhibitions',
                 onTap: () {
-                  context.findAncestorStateOfType<AdminWrapperState>()?.setIndex(1);
+                  // Navigate to exhibitions tab.
+                  context
+                      .findAncestorStateOfType<AdminWrapperState>()
+                      ?.setIndex(1);
                 },
                 isLast: false,
               ),
@@ -158,7 +169,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 icon: Icons.fact_check_outlined,
                 label: 'Review Applications',
                 onTap: () {
-                  context.findAncestorStateOfType<AdminWrapperState>()?.setIndex(2);
+                  // Navigate to applications tab.
+                  context
+                      .findAncestorStateOfType<AdminWrapperState>()
+                      ?.setIndex(2);
                 },
                 isLast: false,
               ),
@@ -166,7 +180,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 icon: Icons.people_outline,
                 label: 'Manage Users',
                 onTap: () {
-                  context.findAncestorStateOfType<AdminWrapperState>()?.setIndex(3);
+                  // Navigate to users tab.
+                  context
+                      .findAncestorStateOfType<AdminWrapperState>()
+                      ?.setIndex(3);
                 },
                 isLast: true,
               ),
@@ -187,7 +204,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: isLast 
+        borderRadius: isLast
             ? const BorderRadius.vertical(bottom: Radius.circular(16))
             : null,
         child: Column(
@@ -202,11 +219,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       color: AppColors.primaryAccent.withValues(alpha: 0.08),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(
-                      icon,
-                      color: AppColors.primaryAccent,
-                      size: 20,
-                    ),
+                    child: Icon(icon, color: AppColors.primaryAccent, size: 20),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -232,7 +245,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 height: 1,
                 thickness: 1,
                 color: Colors.grey.shade100,
-                indent: 58, // Exclude the icon from the divider line
+                indent: 58,
               ),
           ],
         ),
@@ -246,24 +259,35 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     final applicationProvider = context.watch<ApplicationProvider>();
     final userProvider = context.watch<UserProvider>();
 
-    final isLoading = exhibitionProvider.isLoading || 
-                      applicationProvider.isLoading || 
-                      userProvider.isLoading;
+    // Check dashboard loading state.
+    final isLoading =
+        exhibitionProvider.isLoading ||
+        applicationProvider.isLoading ||
+        userProvider.isLoading;
 
     final exhibitions = exhibitionProvider.allExhibitions;
     final applications = applicationProvider.allApplications;
     final users = userProvider.users;
 
+    // Count published exhibitions.
     final publishedCount = exhibitions.where((e) => e.isPublished).length;
+
+    // Count draft exhibitions.
     final draftCount = exhibitions.length - publishedCount;
 
+    // Count inactive users.
     final inactiveUsers = users.where((u) => !u.isActive).length;
+
+    // Count active users.
     final activeUsers = users.length - inactiveUsers;
 
-    final pendingReviewsCount = applications.where((a) => a.status == 'Pending').length;
+    // Count applications waiting for review.
+    final pendingReviewsCount = applications
+        .where((a) => a.status == 'Pending')
+        .length;
 
     return Scaffold(
-      backgroundColor: Colors.white, // Standard premium white background
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
@@ -272,26 +296,34 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               child: isLoading
                   ? const AppLoading()
                   : RefreshIndicator(
+                      // Refresh dashboard data.
                       onRefresh: () async => _fetchData(),
                       child: ListView(
-                        physics: const ClampingScrollPhysics(), // Prevent overscroll stretch
+                        physics: const ClampingScrollPhysics(),
                         padding: const EdgeInsets.symmetric(
                           horizontal: AppSpacing.screenHorizontal,
                           vertical: AppSpacing.m,
                         ),
                         children: [
-                          // 1. Premium Unified Dark AppHeroCard
+                          // Show platform summary card.
                           AppHeroCard(
                             title: 'Platform',
                             icon: Icons.shield_outlined,
-                            mainValue: '${exhibitions.length} ${exhibitions.length == 1 ? 'Total Event' : 'Total Events'}',
-                            subtitle: 'Monitor events, applications, and users.',
+                            mainValue:
+                                '${exhibitions.length} ${exhibitions.length == 1 ? 'Total Event' : 'Total Events'}',
+                            subtitle:
+                                'Monitor events, applications, and users.',
                             isDark: true,
                             stats: [
+                              // Show active users stat.
                               Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.people_outline, size: 16, color: Colors.white.withValues(alpha: 0.6)),
+                                  Icon(
+                                    Icons.people_outline,
+                                    size: 16,
+                                    color: Colors.white.withValues(alpha: 0.6),
+                                  ),
                                   const SizedBox(width: 6),
                                   Text(
                                     '$activeUsers ${activeUsers == 1 ? 'Active User' : 'Active Users'}',
@@ -303,10 +335,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                   ),
                                 ],
                               ),
+
+                              // Show total applications stat.
                               Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.description_outlined, size: 16, color: Colors.white.withValues(alpha: 0.6)),
+                                  Icon(
+                                    Icons.description_outlined,
+                                    size: 16,
+                                    color: Colors.white.withValues(alpha: 0.6),
+                                  ),
                                   const SizedBox(width: 6),
                                   Text(
                                     '${applications.length} ${applications.length == 1 ? 'Application' : 'Applications'}',
@@ -322,10 +360,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           ),
                           const SizedBox(height: AppSpacing.l),
 
-                          // 2. Actionable Pending Reviews Alert Banner
+                          // Show pending review shortcut.
                           _buildPendingAlert(pendingReviewsCount),
 
-                          // 3. Overview Metric Grid Section
+                          // Show dashboard overview title.
                           const Text(
                             'Overview',
                             style: TextStyle(
@@ -336,32 +374,41 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                             ),
                           ),
                           const SizedBox(height: AppSpacing.m),
+
+                          // Show overview metric cards.
                           GridView.count(
                             crossAxisCount: 2,
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             mainAxisSpacing: AppSpacing.m,
                             crossAxisSpacing: AppSpacing.m,
-                            childAspectRatio: 1.25, // Perfectly balanced spacing ratio
+                            childAspectRatio: 1.25,
                             children: [
+                              // Show published exhibitions count.
                               DashboardSummaryCard(
                                 title: 'Published',
                                 value: publishedCount.toString(),
                                 icon: Icons.public,
                                 subtitle: 'Live in explore',
                               ),
+
+                              // Show draft exhibitions count.
                               DashboardSummaryCard(
                                 title: 'Drafts',
                                 value: draftCount.toString(),
                                 icon: Icons.edit_note,
                                 subtitle: 'Unpublished events',
                               ),
+
+                              // Show pending applications count.
                               DashboardSummaryCard(
                                 title: 'Pending',
                                 value: pendingReviewsCount.toString(),
                                 icon: Icons.pending_actions,
                                 subtitle: 'Requires review',
                               ),
+
+                              // Show active users count.
                               DashboardSummaryCard(
                                 title: 'Active Users',
                                 value: activeUsers.toString(),
@@ -372,7 +419,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           ),
                           const SizedBox(height: AppSpacing.l),
 
-                          // 4. Premium Quick Actions
+                          // Show admin quick actions.
                           _buildQuickActions(context),
                           const SizedBox(height: AppSpacing.l),
                         ],

@@ -20,41 +20,60 @@ import '../../../core/utils/feedback_helper.dart';
 class SelectBoothScreen extends StatefulWidget {
   final ExhibitionModel exhibition;
 
-  const SelectBoothScreen({super.key, required this.exhibition});
+  const SelectBoothScreen({
+    super.key,
+    required this.exhibition,
+  });
 
   @override
   State<SelectBoothScreen> createState() => _SelectBoothScreenState();
 }
 
 class _SelectBoothScreenState extends State<SelectBoothScreen> {
+  // Store the currently selected booth spot.
   BoothSpotModel? _selectedSpot;
 
   @override
   void initState() {
     super.initState();
+
+    // Fetch booth data after the screen is loaded.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fetchData();
     });
   }
 
   void _fetchData() {
+    // Load booth spots for this exhibition.
     context.read<BoothSpotProvider>().fetchBoothSpots(widget.exhibition.id);
+
+    // Load booth packages for this exhibition.
     context.read<BoothProvider>().fetchBoothPackages(widget.exhibition.id);
   }
 
   Widget _buildOverviewCard(List<BoothSpotModel> spots) {
+    // Count selected, available, and booked booth spots.
     final int selectedCount = _selectedSpot != null ? 1 : 0;
-    final int availableCount = spots.where((s) => s.status == 'Available').length - selectedCount;
+    final int availableCount =
+        spots.where((s) => s.status == 'Available').length - selectedCount;
     final int bookedCount = spots.where((s) => s.status != 'Available').length;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.screenHorizontal,
+      ),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        padding: const EdgeInsets.symmetric(
+          vertical: 14,
+          horizontal: 16,
+        ),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.shade200, width: 1.2),
+          border: Border.all(
+            color: Colors.grey.shade200,
+            width: 1.2,
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.02),
@@ -94,6 +113,7 @@ class _SelectBoothScreenState extends State<SelectBoothScreen> {
     required String label,
     bool isBold = false,
   }) {
+    // Build one booth status indicator.
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -128,8 +148,11 @@ class _SelectBoothScreenState extends State<SelectBoothScreen> {
   }
 
   Widget _buildSectionHeader(int totalSpots) {
+    // Build booth layout section header.
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal + 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.screenHorizontal + 4,
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -156,27 +179,39 @@ class _SelectBoothScreenState extends State<SelectBoothScreen> {
   }
 
   int getRowIndex(String spotNumber) {
+    // Convert booth row letter into row index.
     if (spotNumber.isEmpty) return 0;
+
     final firstChar = spotNumber[0].toUpperCase();
-    if (firstChar.codeUnitAt(0) >= 'A'.codeUnitAt(0) && firstChar.codeUnitAt(0) <= 'Z'.codeUnitAt(0)) {
+
+    if (firstChar.codeUnitAt(0) >= 'A'.codeUnitAt(0) &&
+        firstChar.codeUnitAt(0) <= 'Z'.codeUnitAt(0)) {
       return firstChar.codeUnitAt(0) - 'A'.codeUnitAt(0);
     }
+
     return 0;
   }
 
   int getColIndex(String spotNumber) {
+    // Convert booth number into column index.
     if (spotNumber.length < 2) return 0;
+
     final digits = spotNumber.substring(1);
     final val = int.tryParse(digits);
+
     if (val != null) {
-      return val - 1; // 0-indexed
+      return val - 1;
     }
+
     return 0;
   }
 
   Widget _buildBookingClosedBanner() {
+    // Show banner when booth booking is closed.
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.screenHorizontal,
+      ),
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -213,38 +248,49 @@ class _SelectBoothScreenState extends State<SelectBoothScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Get booth spot and package data from providers.
     final spotProvider = context.watch<BoothSpotProvider>();
     final boothProvider = context.watch<BoothProvider>();
-    
+
     final spots = spotProvider.boothSpots;
     final isLoading = spotProvider.isLoading || boothProvider.isLoading;
 
+    // Detect maximum row and column from booth spot numbers.
     int maxRow = 0;
     int maxCol = 0;
+
     for (final spot in spots) {
       final r = getRowIndex(spot.spotNumber);
       final c = getColIndex(spot.spotNumber);
+
       if (r > maxRow) maxRow = r;
       if (c > maxCol) maxCol = c;
     }
 
-    final rowsCount = widget.exhibition.layoutRows ?? (spots.isEmpty ? 0 : maxRow + 1);
-    final columnsCount = widget.exhibition.layoutColumns ?? (spots.isEmpty ? 0 : maxCol + 1);
+    // Use saved layout size or calculate from booth spots.
+    final rowsCount =
+        widget.exhibition.layoutRows ?? (spots.isEmpty ? 0 : maxRow + 1);
+    final columnsCount =
+        widget.exhibition.layoutColumns ?? (spots.isEmpty ? 0 : maxCol + 1);
 
+    // Create empty booth layout grid.
     final List<List<BoothSpotModel?>> grid = List.generate(
       rowsCount,
       (_) => List.filled(columnsCount, null),
     );
 
+    // Place each booth spot into correct grid position.
     for (final spot in spots) {
       final r = getRowIndex(spot.spotNumber);
       final c = getColIndex(spot.spotNumber);
+
       if (r >= 0 && r < rowsCount && c >= 0 && c < columnsCount) {
         grid[r][c] = spot;
       }
     }
 
     Widget buildEmptyTile(int r, int c) {
+      // Build placeholder for empty layout spaces.
       final rowLetter = String.fromCharCode('A'.codeUnitAt(0) + r);
       final colNumber = (c + 1).toString().padLeft(2, '0');
       final spotLabel = '$rowLetter$colNumber';
@@ -289,9 +335,10 @@ class _SelectBoothScreenState extends State<SelectBoothScreen> {
     }
 
     Widget buildSpotTile(BoothSpotModel spot) {
+      // Build selectable booth spot tile.
       final isSelected = _selectedSpot?.id == spot.id;
       final isAvailable = spot.status == 'Available';
-      
+
       return Container(
         width: 145,
         height: 155,
@@ -327,36 +374,55 @@ class _SelectBoothScreenState extends State<SelectBoothScreen> {
                   : spots.isEmpty
                       ? const AppEmptyState(
                           title: 'No Booths Available',
-                          message: 'The organizer has not added any booth spots for this event.',
+                          message:
+                              'The organizer has not added any booth spots for this event.',
                           icon: Icons.grid_off,
                         )
                       : Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             const SizedBox(height: 16),
+
+                            // Booth status summary.
                             _buildOverviewCard(spots),
+
+                            // Show booking closed notice.
                             if (!widget.exhibition.isBookingOpen) ...[
                               const SizedBox(height: 12),
                               _buildBookingClosedBanner(),
                             ],
                             const SizedBox(height: 24),
+
+                            // Booth layout section title.
                             _buildSectionHeader(spots.length),
                             const SizedBox(height: 10),
+
                             Expanded(
                               child: LayoutBuilder(
                                 builder: (context, constraints) {
-                                  final double availableHeight = constraints.maxHeight;
-                                  
-                                  final double tileHeight = 165.0; // 155.0 tile height + 10.0 vertical margins (5 top, 5 bottom)
-                                  final double baseDecorHeight = 40.0; // outer container margins + canvas padding
-                                  
-                                  final double desiredHeight = (rowsCount * tileHeight) + baseDecorHeight;
-                                  final double maxGridHeight = availableHeight - 16.0;
-                                  final double containerHeight = desiredHeight <= maxGridHeight 
-                                      ? desiredHeight 
-                                      : (maxGridHeight > 100 ? maxGridHeight : 100.0);
+                                  final double availableHeight =
+                                      constraints.maxHeight;
 
-                                  final double matrixWidth = columnsCount * 155.0;
+                                  // Calculate grid height based on rows.
+                                  final double tileHeight = 165.0;
+                                  final double baseDecorHeight = 40.0;
+                                  final double desiredHeight =
+                                      (rowsCount * tileHeight) +
+                                          baseDecorHeight;
+
+                                  // Keep grid inside available screen height.
+                                  final double maxGridHeight =
+                                      availableHeight - 16.0;
+                                  final double containerHeight =
+                                      desiredHeight <= maxGridHeight
+                                          ? desiredHeight
+                                          : (maxGridHeight > 100
+                                              ? maxGridHeight
+                                              : 100.0);
+
+                                  // Calculate grid width based on columns.
+                                  final double matrixWidth =
+                                      columnsCount * 155.0;
 
                                   return Padding(
                                     padding: const EdgeInsets.fromLTRB(
@@ -370,10 +436,15 @@ class _SelectBoothScreenState extends State<SelectBoothScreen> {
                                       decoration: BoxDecoration(
                                         color: Colors.white,
                                         borderRadius: BorderRadius.circular(24),
-                                        border: Border.all(color: Colors.grey.shade200, width: 1.2),
+                                        border: Border.all(
+                                          color: Colors.grey.shade200,
+                                          width: 1.2,
+                                        ),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: Colors.black.withValues(alpha: 0.02),
+                                            color: Colors.black.withValues(
+                                              alpha: 0.02,
+                                            ),
                                             blurRadius: 12,
                                             offset: const Offset(0, 6),
                                           ),
@@ -392,20 +463,36 @@ class _SelectBoothScreenState extends State<SelectBoothScreen> {
                                                   left: 12,
                                                   right: 12,
                                                   top: 12,
-                                                  bottom: 120 + MediaQuery.of(context).padding.bottom,
+                                                  bottom: 120 +
+                                                      MediaQuery.of(context)
+                                                          .padding
+                                                          .bottom,
                                                 ),
                                                 child: SizedBox(
                                                   width: matrixWidth,
                                                   child: Column(
-                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
                                                     children: [
-                                                      for (int r = 0; r < rowsCount; r++)
+                                                      for (int r = 0;
+                                                          r < rowsCount;
+                                                          r++)
                                                         Row(
                                                           children: [
-                                                            for (int c = 0; c < columnsCount; c++)
+                                                            for (int c = 0;
+                                                                c <
+                                                                    columnsCount;
+                                                                c++)
                                                               grid[r][c] != null
-                                                                  ? buildSpotTile(grid[r][c]!)
-                                                                  : buildEmptyTile(r, c),
+                                                                  ? buildSpotTile(
+                                                                      grid[r][
+                                                                          c]!,
+                                                                    )
+                                                                  : buildEmptyTile(
+                                                                      r,
+                                                                      c,
+                                                                    ),
                                                           ],
                                                         ),
                                                     ],
@@ -432,11 +519,16 @@ class _SelectBoothScreenState extends State<SelectBoothScreen> {
           left: 24,
           right: 24,
           top: 16,
-          bottom: MediaQuery.of(context).padding.bottom + 16, // Premium visual lift above home indicators matching details page
+          bottom: MediaQuery.of(context).padding.bottom + 16,
         ),
         decoration: BoxDecoration(
           color: Colors.white,
-          border: Border(top: BorderSide(color: Colors.grey.shade200, width: 1)),
+          border: Border(
+            top: BorderSide(
+              color: Colors.grey.shade200,
+              width: 1,
+            ),
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.03),
@@ -451,28 +543,45 @@ class _SelectBoothScreenState extends State<SelectBoothScreen> {
                 onPressed: _selectedSpot == null
                     ? null
                     : () {
+                        // Find package linked to selected booth spot.
                         final package = boothProvider.boothPackages
-                            .where((p) => p.id == _selectedSpot!.boothPackageId)
+                            .where(
+                              (p) => p.id == _selectedSpot!.boothPackageId,
+                            )
                             .firstOrNull;
 
+                        // Stop if booth package cannot be found.
                         if (package == null) {
-                          FeedbackHelper.showError(context, 'Could not resolve booth package.');
+                          FeedbackHelper.showError(
+                            context,
+                            'Could not resolve booth package.',
+                          );
                           return;
                         }
 
-                        // Authenticate Guest User at checkout point
+                        // Get current authentication state.
                         final authProvider = context.read<AuthProvider>();
+
+                        // Require login before booth application.
                         if (!authProvider.isLoggedIn) {
-                          FeedbackHelper.showWarning(context, 'Please log in to apply for a booth');
+                          FeedbackHelper.showWarning(
+                            context,
+                            'Please log in to apply for a booth',
+                          );
                           context.push(AppRoutes.login);
                           return;
                         }
 
+                        // Only exhibitor users can book booths.
                         if (authProvider.currentUser?.role != 'Exhibitor') {
-                          FeedbackHelper.showWarning(context, 'Only exhibitors can book booths');
+                          FeedbackHelper.showWarning(
+                            context,
+                            'Only exhibitors can book booths',
+                          );
                           return;
                         }
 
+                        // Send selected data to application form.
                         context.push(
                           AppRoutes.applicationForm,
                           extra: {

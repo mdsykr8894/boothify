@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../constants/app_spacing.dart';
 import '../constants/app_text_styles.dart';
 
+// Reusable app text field.
 class AppTextField extends StatelessWidget {
   final String label;
   final String? hint;
@@ -25,13 +26,17 @@ class AppTextField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      // Align label and input to the left.
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
           style: AppTextStyles.label,
         ),
+
+        // Add spacing between label and input.
         const SizedBox(height: AppSpacing.s),
+
         TextFormField(
           controller: controller,
           obscureText: isPassword,

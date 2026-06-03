@@ -1,32 +1,33 @@
 import 'package:intl/intl.dart';
 
+// Shared date formatting helper.
 class DateFormatHelper {
-  /// Formats a single date to Malaysia-friendly format: e.g., "20 May 2026"
+  // Format date as 20 May 2026.
   static String formatDate(DateTime date) {
     return DateFormat('d MMM yyyy').format(date);
   }
 
-  /// Formats a date with time: e.g., "20 May 2026, 9:00 AM"
+  // Format date and time as 20 May 2026, 9:00 AM.
   static String formatDateTime(DateTime date) {
     return DateFormat('d MMM yyyy, h:mm a').format(date);
   }
 
-  /// Formats a date range to a compact Malaysia-friendly format.
-  /// - Same month & year: "20–23 May 2026"
-  /// - Different month, same year: "30 May – 2 Jun 2026"
-  /// - Different year: "30 Dec 2026 – 2 Jan 2027"
+  // Format date range for event dates.
   static String formatDateRange(DateTime start, DateTime end) {
     final sameYear = start.year == end.year;
     final sameMonth = sameYear && start.month == end.month;
 
+    // Format range within same month.
     if (sameMonth) {
       return '${start.day}–${end.day} ${DateFormat('MMM yyyy').format(start)}';
     }
 
+    // Format range within same year.
     if (sameYear) {
       return '${DateFormat('d MMM').format(start)} – ${DateFormat('d MMM yyyy').format(end)}';
     }
 
+    // Format range across different years.
     return '${DateFormat('d MMM yyyy').format(start)} – ${DateFormat('d MMM yyyy').format(end)}';
   }
 }

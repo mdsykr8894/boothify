@@ -11,6 +11,7 @@ import '../../../providers/auth_provider.dart';
 import '../../../core/widgets/base_dialog.dart';
 import '../../../core/utils/feedback_helper.dart';
 
+// Display user profile and account menu.
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
@@ -37,7 +38,8 @@ class ProfileScreen extends StatelessWidget {
             ),
             Expanded(
               child: ScrollConfiguration(
-                behavior: ScrollConfiguration.of(context).copyWith(overscroll: false),
+                behavior:
+                    ScrollConfiguration.of(context).copyWith(overscroll: false),
                 child: SingleChildScrollView(
                   physics: const ClampingScrollPhysics(),
                   padding: const EdgeInsets.symmetric(
@@ -47,14 +49,20 @@ class ProfileScreen extends StatelessWidget {
                   child: Column(
                     children: [
                       const SizedBox(height: 18),
+
+                      // Show user profile card.
                       _ProfileCard(user: user),
                       const SizedBox(height: 32),
+
+                      // Show menu based on login status.
                       if (user == null) ...[
                         _buildGuestMenu(context),
                       ] else ...[
                         _buildUserMenu(context, user),
                       ],
                       const SizedBox(height: 24),
+
+                      // Show login or logout action.
                       _buildActionButton(context, user),
                       const SizedBox(height: AppSpacing.xl),
                     ],
@@ -94,6 +102,7 @@ class ProfileScreen extends StatelessWidget {
   Widget _buildUserMenu(BuildContext context, dynamic user) {
     String roleSpecificTitle = 'Profile Details';
 
+    // Set profile label based on user role.
     if (user.role == 'Exhibitor') {
       roleSpecificTitle = 'Company Profile';
     } else if (user.role == 'Organizer') {
@@ -181,8 +190,11 @@ class ProfileScreen extends StatelessWidget {
           primaryLabel: 'Log Out',
           secondaryLabel: 'Cancel',
           onPrimaryPressed: () async {
-            Navigator.pop(context); // Close confirmation dialog
+            Navigator.pop(context);
+
+            // Sign out current user.
             await context.read<AuthProvider>().signOut();
+
             if (context.mounted) {
               context.go(AppRoutes.root);
             }
@@ -197,6 +209,7 @@ class ProfileScreen extends StatelessWidget {
   }
 }
 
+// Display profile avatar and user details.
 class _ProfileCard extends StatelessWidget {
   final dynamic user;
 
@@ -208,6 +221,7 @@ class _ProfileCard extends StatelessWidget {
       maxLines: 1,
       textDirection: TextDirection.ltr,
     )..layout();
+
     return textPainter.size.width;
   }
 
@@ -215,9 +229,8 @@ class _ProfileCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isGuest = user == null;
     final String name = isGuest ? 'Guest User' : user.name;
-    final String email = isGuest
-        ? 'Log in to personalize your experience'
-        : user.email;
+    final String email =
+        isGuest ? 'Log in to personalize your experience' : user.email;
     final String initial = isGuest ? 'G' : name.substring(0, 1).toUpperCase();
 
     const nameStyle = TextStyle(
@@ -225,6 +238,7 @@ class _ProfileCard extends StatelessWidget {
       fontWeight: FontWeight.w700,
       color: AppColors.primaryText,
     );
+
     const emailStyle = TextStyle(
       fontSize: 14,
       color: AppColors.secondaryText,
@@ -233,6 +247,7 @@ class _ProfileCard extends StatelessWidget {
     final nameWidth = _calculateTextWidth(name, nameStyle);
     final emailWidth = _calculateTextWidth(email, emailStyle);
 
+    // Position role badge based on text length.
     final bool badgeBesideName = !isGuest && nameWidth <= emailWidth;
     final bool badgeBesideEmail = !isGuest && emailWidth < nameWidth;
 
@@ -256,7 +271,7 @@ class _ProfileCard extends StatelessWidget {
           Stack(
             alignment: Alignment.center,
             children: [
-              // Outer Ring
+              // Show avatar outer ring.
               Container(
                 width: 94,
                 height: 94,
@@ -268,7 +283,8 @@ class _ProfileCard extends StatelessWidget {
                   ),
                 ),
               ),
-              // Avatar
+
+              // Show user initial avatar.
               Container(
                 width: 84,
                 height: 84,
@@ -287,6 +303,8 @@ class _ProfileCard extends StatelessWidget {
                   ),
                 ),
               ),
+
+              // Show edit avatar icon for logged-in user.
               if (!isGuest)
                 Positioned(
                   bottom: 2,
@@ -308,6 +326,8 @@ class _ProfileCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 18),
+
+          // Show name and optional role badge.
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
@@ -330,6 +350,8 @@ class _ProfileCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 4),
+
+          // Show email and optional role badge.
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
@@ -351,7 +373,8 @@ class _ProfileCard extends StatelessWidget {
               ],
             ],
           ),
-          // If text is very long and we forced badge below
+
+          // Move role badge below when text is too long.
           if (!isGuest && !badgeBesideName && !badgeBesideEmail) ...[
             const SizedBox(height: 12),
             StatusBadge(
@@ -365,6 +388,7 @@ class _ProfileCard extends StatelessWidget {
   }
 }
 
+// Display profile section title.
 class _ProfileSectionTitle extends StatelessWidget {
   final String title;
 
@@ -391,6 +415,7 @@ class _ProfileSectionTitle extends StatelessWidget {
   }
 }
 
+// Display profile menu item.
 class _ProfileMenuItem extends StatelessWidget {
   final IconData icon;
   final String title;

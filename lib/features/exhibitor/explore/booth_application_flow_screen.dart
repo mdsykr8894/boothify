@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../../../app/routes/app_routes.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_radius.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_empty_state.dart';
 import '../../../core/widgets/app_loading.dart';
@@ -25,26 +26,41 @@ import '../../../core/utils/feedback_helper.dart';
 class BoothApplicationFlowScreen extends StatefulWidget {
   final ExhibitionModel exhibition;
 
-  const BoothApplicationFlowScreen({super.key, required this.exhibition});
+  const BoothApplicationFlowScreen({
+    super.key,
+    required this.exhibition,
+  });
 
   @override
-  State<BoothApplicationFlowScreen> createState() => _BoothApplicationFlowScreenState();
+  State<BoothApplicationFlowScreen> createState() =>
+      _BoothApplicationFlowScreenState();
 }
 
-class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen> {
+class _BoothApplicationFlowScreenState
+    extends State<BoothApplicationFlowScreen> {
+  // Control page movement between application steps.
   final PageController _pageController = PageController();
+
+  // Track current application step.
   int _currentStep = 0;
+
+  // Store selected booth spot.
   BoothSpotModel? _selectedSpot;
 
+  // Form key for application form validation.
   final _formKey = GlobalKey<FormState>();
+
+  // Controllers for exhibitor application input.
   final _companyController = TextEditingController();
   final _businessTypeController = TextEditingController();
   final _productNameController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _customRequirementController = TextEditingController();
 
+  // Store selected business type from dropdown.
   String? _selectedBusinessType;
 
+  // Business type options for dropdown.
   static const List<String> _businessTypeOptions = [
     'Technology',
     'Retail',
@@ -57,50 +73,71 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
     'Other',
   ];
 
+  // Store selected additional requirements.
   final List<String> _selectedRequirements = [];
+
+  // Default requirement options.
   final List<String> _availableRequirements = [
     'WiFi',
     'Extra Table & Chair',
   ];
 
+  // Store selected participation period.
   DateTime? _participationStartDate;
   DateTime? _participationEndDate;
 
   @override
   void initState() {
     super.initState();
+
+    // Use full exhibition duration as default participation period.
     _participationStartDate = widget.exhibition.startDate;
     _participationEndDate = widget.exhibition.endDate;
+
+    // Fetch booth data after first frame.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fetchData();
     });
   }
 
   void _fetchData() {
+    // Load booth spots for this exhibition.
     context.read<BoothSpotProvider>().fetchBoothSpots(widget.exhibition.id);
+
+    // Load booth packages for this exhibition.
     context.read<BoothProvider>().fetchBoothPackages(widget.exhibition.id);
   }
 
   int getRowIndex(String spotNumber) {
+    // Convert booth row letter into row index.
     if (spotNumber.isEmpty) return 0;
+
     final firstChar = spotNumber[0].toUpperCase();
-    if (firstChar.codeUnitAt(0) >= 'A'.codeUnitAt(0) && firstChar.codeUnitAt(0) <= 'Z'.codeUnitAt(0)) {
+
+    if (firstChar.codeUnitAt(0) >= 'A'.codeUnitAt(0) &&
+        firstChar.codeUnitAt(0) <= 'Z'.codeUnitAt(0)) {
       return firstChar.codeUnitAt(0) - 'A'.codeUnitAt(0);
     }
+
     return 0;
   }
 
   int getColIndex(String spotNumber) {
+    // Convert booth number into column index.
     if (spotNumber.length < 2) return 0;
+
     final digits = spotNumber.substring(1);
     final val = int.tryParse(digits);
+
     if (val != null) {
-      return val - 1; // 0-indexed
+      return val - 1;
     }
+
     return 0;
   }
 
   Widget _buildBookingClosedBanner() {
+    // Show banner when booking is closed.
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Container(
@@ -138,8 +175,10 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
   }
 
   Widget _buildOverviewCard(List<BoothSpotModel> spots) {
+    // Count booth spot status summary.
     final int selectedCount = _selectedSpot != null ? 1 : 0;
-    final int availableCount = spots.where((s) => s.status == 'Available').length - selectedCount;
+    final int availableCount =
+        spots.where((s) => s.status == 'Available').length - selectedCount;
     final int bookedCount = spots.where((s) => s.status != 'Available').length;
 
     return Padding(
@@ -189,6 +228,7 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
     required String label,
     bool isBold = false,
   }) {
+    // Build one booth status indicator.
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -223,6 +263,7 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
   }
 
   Widget _buildSectionHeader(int totalSpots) {
+    // Build booth layout map header.
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 28),
       child: Row(
@@ -252,6 +293,7 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
 
   @override
   void dispose() {
+    // Dispose controllers to prevent memory leaks.
     _pageController.dispose();
     _companyController.dispose();
     _businessTypeController.dispose();
@@ -261,11 +303,15 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
     super.dispose();
   }
 
-  Future<void> _selectParticipationDate(BuildContext context, bool isStart) async {
+  Future<void> _selectParticipationDate(
+    BuildContext context,
+    bool isStart,
+  ) async {
+    // Open date picker within exhibition date range.
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: isStart 
-          ? (_participationStartDate ?? widget.exhibition.startDate) 
+      initialDate: isStart
+          ? (_participationStartDate ?? widget.exhibition.startDate)
           : (_participationEndDate ?? widget.exhibition.endDate),
       firstDate: widget.exhibition.startDate,
       lastDate: widget.exhibition.endDate,
@@ -298,16 +344,25 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
         );
       },
     );
+
     if (picked != null) {
       setState(() {
         if (isStart) {
+          // Update participation start date.
           _participationStartDate = picked;
-          if (_participationEndDate != null && _participationStartDate!.isAfter(_participationEndDate!)) {
+
+          // Keep end date after start date.
+          if (_participationEndDate != null &&
+              _participationStartDate!.isAfter(_participationEndDate!)) {
             _participationEndDate = _participationStartDate;
           }
         } else {
+          // Update participation end date.
           _participationEndDate = picked;
-          if (_participationStartDate != null && _participationEndDate!.isBefore(_participationStartDate!)) {
+
+          // Keep start date before end date.
+          if (_participationStartDate != null &&
+              _participationEndDate!.isBefore(_participationStartDate!)) {
             _participationStartDate = _participationEndDate;
           }
         }
@@ -316,6 +371,7 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
   }
 
   void _handleBack() {
+    // Go to previous step or close screen.
     if (_currentStep > 0) {
       _pageController.previousPage(
         duration: const Duration(milliseconds: 300),
@@ -327,21 +383,26 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
   }
 
   void _addCustomRequirement() {
+    // Add custom requirement from text field.
     final text = _customRequirementController.text.trim();
     if (text.isEmpty) return;
 
-    // Prevent duplicate in selected requirements (case-insensitive check)
-    final isDuplicate = _selectedRequirements.any((r) => r.toLowerCase() == text.toLowerCase());
+    // Prevent duplicate requirement text.
+    final isDuplicate = _selectedRequirements.any(
+      (r) => r.toLowerCase() == text.toLowerCase(),
+    );
+
     if (!isDuplicate) {
       setState(() {
         _selectedRequirements.add(text);
       });
     }
+
     _customRequirementController.clear();
   }
 
   void _handleSubmit() async {
-    // 1. Fast local check
+    // Prevent submission if booking is closed locally.
     if (!widget.exhibition.isBookingOpen) {
       FeedbackHelper.showError(
         context,
@@ -350,43 +411,61 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
       return;
     }
 
+    // Require participation dates.
     if (_participationStartDate == null || _participationEndDate == null) {
       FeedbackHelper.showError(context, 'Please select participation dates.');
       return;
     }
 
+    // Prevent invalid date range.
     if (_participationStartDate!.isAfter(_participationEndDate!)) {
       FeedbackHelper.showError(context, 'Start date cannot be after end date.');
       return;
     }
 
+    // Ensure participation dates stay within exhibition dates.
     if (_participationStartDate!.isBefore(widget.exhibition.startDate) ||
         _participationEndDate!.isAfter(widget.exhibition.endDate)) {
-      FeedbackHelper.showError(context, 'Participation dates must be within the exhibition duration.');
+      FeedbackHelper.showError(
+        context,
+        'Participation dates must be within the exhibition duration.',
+      );
       return;
     }
 
+    // Ensure booth spot is selected.
+    if (_selectedSpot == null) {
+      FeedbackHelper.showError(context, 'Please select a booth spot.');
+      return;
+    }
+
+    // Get current logged-in user.
     final authProvider = context.read<AuthProvider>();
     final user = authProvider.currentUser;
 
+    // Require login before submission.
     if (user == null) {
       FeedbackHelper.showWarning(context, 'Please login to submit application.');
       context.go(AppRoutes.login);
       return;
     }
 
-    // 2. Real-time Firestore check
     try {
+      // Re-check booking status directly from Firestore.
       final doc = await FirebaseFirestore.instance
           .collection('exhibitions')
           .doc(widget.exhibition.id)
           .get();
+
       if (doc.exists) {
         final data = doc.data();
+
         if (data != null) {
           final isBookingOpen = data['isBookingOpen'] as bool? ?? true;
+
           if (!isBookingOpen) {
             if (!mounted) return;
+
             FeedbackHelper.showError(
               context,
               'Booking is closed. You cannot submit an application for this exhibition.',
@@ -396,22 +475,24 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
         }
       }
     } catch (e) {
+      // Do not block submission if verification check fails.
       debugPrint('Error verifying booking status: $e');
     }
 
     if (!mounted) return;
+
+    // Find booth package connected to selected spot.
     final boothProvider = context.read<BoothProvider>();
-    final package = _selectedSpot != null
-        ? boothProvider.boothPackages
-            .where((p) => p.id == _selectedSpot!.boothPackageId)
-            .firstOrNull
-        : null;
+    final package = boothProvider.boothPackages
+        .where((p) => p.id == _selectedSpot!.boothPackageId)
+        .firstOrNull;
 
     if (package == null) {
       FeedbackHelper.showError(context, 'Could not resolve booth package.');
       return;
     }
 
+    // Create application model before submitting.
     final application = ApplicationModel(
       id: '',
       userId: user.uid,
@@ -430,22 +511,30 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
     );
 
     if (!mounted) return;
+
+    // Submit application through provider.
     final appProvider = context.read<ApplicationProvider>();
     final success = await appProvider.submitApplication(application);
 
     if (mounted) {
       if (success) {
+        // Move to success step after successful submission.
         _pageController.nextPage(
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
         );
       } else {
-        FeedbackHelper.showError(context, appProvider.errorMessage ?? 'Submission failed.');
+        // Show error if submission fails.
+        FeedbackHelper.showError(
+          context,
+          appProvider.errorMessage ?? 'Submission failed.',
+        );
       }
     }
   }
 
   String get _stepTitle {
+    // Return title based on current step.
     switch (_currentStep) {
       case 0:
         return 'Select Booth';
@@ -459,6 +548,7 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
   }
 
   Widget _buildHeader() {
+    // Build top header with back and edit action.
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.screenHorizontal,
@@ -504,7 +594,10 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
                       curve: Curves.easeInOut,
                     );
                   },
-                  icon: const Icon(Icons.edit_outlined, color: AppColors.primaryText),
+                  icon: const Icon(
+                    Icons.edit_outlined,
+                    color: AppColors.primaryText,
+                  ),
                   padding: EdgeInsets.zero,
                   alignment: Alignment.centerRight,
                 ),
@@ -518,6 +611,7 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
   }
 
   Widget _buildBottomAction() {
+    // Disable action when booking is closed.
     if (!widget.exhibition.isBookingOpen && _currentStep < 3) {
       return GestureDetector(
         onTap: () {
@@ -545,6 +639,7 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
         ),
       );
     }
+
     switch (_currentStep) {
       case 0:
         return AppButton(
@@ -552,37 +647,59 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
           onPressed: _selectedSpot == null
               ? null
               : () {
+                  // Require login before continuing.
                   final authProvider = context.read<AuthProvider>();
+
                   if (!authProvider.isLoggedIn) {
-                    FeedbackHelper.showWarning(context, 'Please log in to apply for a booth');
+                    FeedbackHelper.showWarning(
+                      context,
+                      'Please log in to apply for a booth',
+                    );
                     context.push(AppRoutes.login);
                     return;
                   }
 
+                  // Only exhibitor can book booth.
                   if (authProvider.currentUser?.role != 'Exhibitor') {
-                    FeedbackHelper.showWarning(context, 'Only exhibitors can book booths');
+                    FeedbackHelper.showWarning(
+                      context,
+                      'Only exhibitors can book booths',
+                    );
                     return;
                   }
 
+                  // Move to application form step.
                   _pageController.nextPage(
                     duration: const Duration(milliseconds: 300),
                     curve: Curves.easeInOut,
                   );
                 },
         );
+
       case 1:
         return AppButton(
           text: 'Review Application',
           onPressed: () {
+            // Validate form before review step.
             if (_formKey.currentState!.validate()) {
-              if (_participationStartDate == null || _participationEndDate == null) {
-                FeedbackHelper.showError(context, 'Please select participation dates.');
+              if (_participationStartDate == null ||
+                  _participationEndDate == null) {
+                FeedbackHelper.showError(
+                  context,
+                  'Please select participation dates.',
+                );
                 return;
               }
+
               if (_participationStartDate!.isAfter(_participationEndDate!)) {
-                FeedbackHelper.showError(context, 'Start date cannot be after end date.');
+                FeedbackHelper.showError(
+                  context,
+                  'Start date cannot be after end date.',
+                );
                 return;
               }
+
+              // Move to review step.
               _pageController.nextPage(
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeInOut,
@@ -590,13 +707,17 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
             }
           },
         );
+
       case 2:
+        // Show loading state during submission.
         final isLoading = context.watch<ApplicationProvider>().isLoading;
+
         return AppButton(
           text: 'Submit Application',
           isLoading: isLoading,
           onPressed: _handleSubmit,
         );
+
       case 3:
         return AppButton(
           text: 'Return to Explore',
@@ -604,15 +725,17 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
             context.go(AppRoutes.root);
           },
         );
+
       default:
         return const SizedBox();
     }
   }
 
   Widget _buildSelectBoothStep() {
+    // Get booth data from providers.
     final spotProvider = context.watch<BoothSpotProvider>();
     final boothProvider = context.watch<BoothProvider>();
-    
+
     final spots = spotProvider.boothSpots;
     final isLoading = spotProvider.isLoading || boothProvider.isLoading;
 
@@ -628,32 +751,42 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
       );
     }
 
+    // Detect maximum row and column from booth numbers.
     int maxRow = 0;
     int maxCol = 0;
+
     for (final spot in spots) {
       final r = getRowIndex(spot.spotNumber);
       final c = getColIndex(spot.spotNumber);
+
       if (r > maxRow) maxRow = r;
       if (c > maxCol) maxCol = c;
     }
 
-    final rowsCount = widget.exhibition.layoutRows ?? (spots.isEmpty ? 0 : maxRow + 1);
-    final columnsCount = widget.exhibition.layoutColumns ?? (spots.isEmpty ? 0 : maxCol + 1);
+    // Use saved layout size or calculate from booth spots.
+    final rowsCount =
+        widget.exhibition.layoutRows ?? (spots.isEmpty ? 0 : maxRow + 1);
+    final columnsCount =
+        widget.exhibition.layoutColumns ?? (spots.isEmpty ? 0 : maxCol + 1);
 
+    // Create empty booth layout grid.
     final List<List<BoothSpotModel?>> grid = List.generate(
       rowsCount,
       (_) => List.filled(columnsCount, null),
     );
 
+    // Place each booth spot into correct grid position.
     for (final spot in spots) {
       final r = getRowIndex(spot.spotNumber);
       final c = getColIndex(spot.spotNumber);
+
       if (r >= 0 && r < rowsCount && c >= 0 && c < columnsCount) {
         grid[r][c] = spot;
       }
     }
 
     Widget buildEmptyTile(int r, int c) {
+      // Build placeholder tile for empty layout space.
       final rowLetter = String.fromCharCode('A'.codeUnitAt(0) + r);
       final colNumber = (c + 1).toString().padLeft(2, '0');
       final spotLabel = '$rowLetter$colNumber';
@@ -698,9 +831,10 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
     }
 
     Widget buildSpotTile(BoothSpotModel spot) {
+      // Build selectable booth tile.
       final isSelected = _selectedSpot?.id == spot.id;
       final isAvailable = spot.status == 'Available';
-      
+
       return Container(
         width: 145,
         height: 155,
@@ -738,28 +872,33 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
           child: LayoutBuilder(
             builder: (context, constraints) {
               final double availableHeight = constraints.maxHeight;
-              
-              final double tileHeight = 165.0; // 155.0 tile height + 10.0 vertical margins (5 top, 5 bottom)
-              final double baseDecorHeight = 40.0; // outer container margins + canvas padding
-              
-              final double desiredHeight = (rowsCount * tileHeight) + baseDecorHeight;
+
+              // Calculate grid height based on row count.
+              final double tileHeight = 165.0;
+              final double baseDecorHeight = 40.0;
+              final double desiredHeight =
+                  (rowsCount * tileHeight) + baseDecorHeight;
+
+              // Keep grid inside available height.
               final double maxGridHeight = availableHeight - 16.0;
-              final double containerHeight = desiredHeight <= maxGridHeight 
-                  ? desiredHeight 
+              final double containerHeight = desiredHeight <= maxGridHeight
+                  ? desiredHeight
                   : (maxGridHeight > 100 ? maxGridHeight : 100.0);
 
+              // Calculate grid width based on column count.
               final double matrixWidth = columnsCount * 155.0;
 
               return Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Container(
                   height: containerHeight,
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: Colors.grey.shade200, width: 1.2),
+                    border: Border.all(
+                      color: Colors.grey.shade200,
+                      width: 1.2,
+                    ),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.02),
@@ -781,7 +920,8 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
                               left: 12,
                               right: 12,
                               top: 12,
-                              bottom: 120 + MediaQuery.of(context).padding.bottom,
+                              bottom:
+                                  120 + MediaQuery.of(context).padding.bottom,
                             ),
                             child: SizedBox(
                               width: matrixWidth,
@@ -818,6 +958,7 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
     required String title,
     required List<Widget> children,
   }) {
+    // Build reusable form section card.
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 24),
@@ -860,6 +1001,7 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
     int maxLines = 1,
     TextInputType keyboardType = TextInputType.text,
   }) {
+    // Build reusable text form field.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -889,7 +1031,10 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
               fontSize: 15,
               fontWeight: FontWeight.w400,
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 18,
+            ),
             fillColor: Colors.white,
             filled: true,
             enabledBorder: OutlineInputBorder(
@@ -905,11 +1050,17 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: Colors.redAccent, width: 1),
+              borderSide: const BorderSide(
+                color: Colors.redAccent,
+                width: 1,
+              ),
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+              borderSide: const BorderSide(
+                color: Colors.redAccent,
+                width: 1.5,
+              ),
             ),
           ),
         ),
@@ -925,6 +1076,7 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
     required ValueChanged<String?> onChanged,
     String? Function(String?)? validator,
   }) {
+    // Build reusable dropdown form field.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -955,7 +1107,10 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
           }).toList(),
           onChanged: onChanged,
           validator: validator,
-          icon: Icon(Icons.keyboard_arrow_down_rounded, color: Colors.grey.shade400),
+          icon: Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: Colors.grey.shade400,
+          ),
           dropdownColor: Colors.white,
           borderRadius: BorderRadius.circular(16),
           style: const TextStyle(
@@ -964,7 +1119,10 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
             color: AppColors.primaryText,
           ),
           decoration: InputDecoration(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 18,
+            ),
             fillColor: Colors.white,
             filled: true,
             enabledBorder: OutlineInputBorder(
@@ -973,15 +1131,24 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: AppColors.primaryText, width: 1.5),
+              borderSide: const BorderSide(
+                color: AppColors.primaryText,
+                width: 1.5,
+              ),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: Colors.redAccent, width: 1),
+              borderSide: const BorderSide(
+                color: Colors.redAccent,
+                width: 1,
+              ),
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+              borderSide: const BorderSide(
+                color: Colors.redAccent,
+                width: 1.5,
+              ),
             ),
           ),
         ),
@@ -993,6 +1160,7 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
     required String label,
     required String value,
   }) {
+    // Build read-only profile field.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1026,7 +1194,9 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
     );
   }
 
-  Widget _buildSuccessIcon() {
+
+    Widget _buildSuccessIcon() {
+    // Build success check icon after submission.
     return SizedBox(
       width: 160,
       height: 160,
@@ -1122,7 +1292,11 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
     );
   }
 
-  Widget _buildSuccessSummaryCard(BoothSpotModel spot, BoothModel package) {
+  Widget _buildSuccessSummaryCard(
+    BoothSpotModel spot,
+    BoothModel package,
+  ) {
+    // Build summary card after successful submission.
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -1177,6 +1351,7 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
     bool isStatus = false,
     bool isPrice = false,
   }) {
+    // Build one summary row.
     return Row(
       children: [
         Container(
@@ -1234,7 +1409,9 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
             style: TextStyle(
               fontSize: 14.5,
               fontWeight: FontWeight.w600,
-              color: isPrice ? AppColors.primaryAccent : AppColors.primaryText,
+              color: isPrice
+                  ? AppColors.primaryAccent
+                  : AppColors.primaryText,
             ),
           ),
       ],
@@ -1242,6 +1419,7 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
   }
 
   Widget _buildAmenitiesChipList(List<String> amenities) {
+    // Build chip list for included amenities.
     if (amenities.isEmpty) {
       return Text(
         'No included amenities listed',
@@ -1252,6 +1430,7 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
         ),
       );
     }
+
     return Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -1284,8 +1463,10 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
   }
 
   Widget _buildApplicationFormStep() {
+    // Get selected booth package and current user.
     final boothProvider = context.watch<BoothProvider>();
     final authProvider = context.watch<AuthProvider>();
+
     final package = _selectedSpot != null
         ? boothProvider.boothPackages
             .where((p) => p.id == _selectedSpot!.boothPackageId)
@@ -1294,12 +1475,13 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
 
     final currentUser = authProvider.currentUser;
 
-    // Gather chips: pre-defined + custom requirement chips
+    // Build requirement chips from predefined and custom requirements.
     final List<Widget> requirementChips = [];
 
-    // Pre-defined chips
+    // Add predefined requirement chips.
     for (var req in _availableRequirements) {
       final isSelected = _selectedRequirements.contains(req);
+
       requirementChips.add(
         FilterChip(
           label: Text(req),
@@ -1326,8 +1508,11 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
       );
     }
 
-    // Dynamic custom requirements chips (items in _selectedRequirements but not in _availableRequirements)
-    final customRequirements = _selectedRequirements.where((r) => !_availableRequirements.contains(r)).toList();
+    // Add custom requirement chips.
+    final customRequirements = _selectedRequirements
+        .where((r) => !_availableRequirements.contains(r))
+        .toList();
+
     for (var req in customRequirements) {
       requirementChips.add(
         FilterChip(
@@ -1366,7 +1551,6 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Section 1: Selected Booth Details
               if (_selectedSpot != null && package != null)
                 _buildFormSection(
                   title: 'Selected Booth Details',
@@ -1375,7 +1559,7 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
                   ],
                 ),
 
-              // Section 1.5: Participation Period
+              // Participation period section.
               _buildFormSection(
                 title: 'Participation Period',
                 children: [
@@ -1393,14 +1577,16 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
                     children: [
                       BottomSheetDateField(
                         innerLabel: 'Start Date',
-                        date: _participationStartDate ?? widget.exhibition.startDate,
+                        date: _participationStartDate ??
+                            widget.exhibition.startDate,
                         onTap: () => _selectParticipationDate(context, true),
                         dateFormat: DateFormat('d MMM yyyy'),
                       ),
                       const SizedBox(width: 16),
                       BottomSheetDateField(
                         innerLabel: 'End Date',
-                        date: _participationEndDate ?? widget.exhibition.endDate,
+                        date:
+                            _participationEndDate ?? widget.exhibition.endDate,
                         onTap: () => _selectParticipationDate(context, false),
                         dateFormat: DateFormat('d MMM yyyy'),
                       ),
@@ -1409,7 +1595,7 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
                 ],
               ),
 
-              // Section 2: Company Information
+              // Company information section.
               _buildFormSection(
                 title: 'Company Information',
                 children: [
@@ -1417,7 +1603,8 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
                     controller: _companyController,
                     label: 'Company Name',
                     hint: 'Enter registered company name',
-                    validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                    validator: (v) =>
+                        v == null || v.isEmpty ? 'Required' : null,
                   ),
                   const SizedBox(height: 20),
                   _buildFormDropdownField(
@@ -1428,6 +1615,7 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
                     onChanged: (val) {
                       setState(() {
                         _selectedBusinessType = val;
+
                         if (val != 'Other') {
                           _businessTypeController.text = val ?? '';
                         } else {
@@ -1443,13 +1631,14 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
                       controller: _businessTypeController,
                       label: 'Specify Business Type',
                       hint: 'Enter your business type',
-                      validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+                      validator: (v) =>
+                          v == null || v.trim().isEmpty ? 'Required' : null,
                     ),
                   ],
                 ],
               ),
 
-              // Section 3: Contact Information
+              // Contact information section.
               _buildFormSection(
                 title: 'Contact Information',
                 children: [
@@ -1465,7 +1654,7 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
                 ],
               ),
 
-              // Section 4: Booth Details
+              // Booth details section.
               _buildFormSection(
                 title: 'Booth Details',
                 children: [
@@ -1473,20 +1662,23 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
                     controller: _productNameController,
                     label: 'Product / Service Name',
                     hint: 'What are you showcasing?',
-                    validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                    validator: (v) =>
+                        v == null || v.isEmpty ? 'Required' : null,
                   ),
                   const SizedBox(height: 20),
                   _buildFormTextField(
                     controller: _descriptionController,
                     label: 'Product / Booth Description',
-                    hint: 'Briefly describe your participation and display goals...',
+                    hint:
+                        'Briefly describe your participation and display goals...',
                     maxLines: 4,
-                    validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                    validator: (v) =>
+                        v == null || v.isEmpty ? 'Required' : null,
                   ),
                 ],
               ),
 
-              // Section 5: Included Amenities
+              // Included amenities section.
               if (package != null)
                 _buildFormSection(
                   title: 'Included Amenities',
@@ -1495,7 +1687,7 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
                   ],
                 ),
 
-              // Section 6: Additional Requirements
+              // Additional requirements section.
               _buildFormSection(
                 title: 'Additional Requirements',
                 children: [
@@ -1524,16 +1716,23 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
                               fontSize: 14,
                               fontWeight: FontWeight.w400,
                             ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
                             fillColor: Colors.white,
                             filled: true,
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.grey.shade200),
+                              borderSide:
+                                  BorderSide(color: Colors.grey.shade200),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: AppColors.primaryAccent, width: 1.5),
+                              borderSide: const BorderSide(
+                                color: AppColors.primaryAccent,
+                                width: 1.5,
+                              ),
                             ),
                           ),
                           onSubmitted: (_) => _addCustomRequirement(),
@@ -1559,7 +1758,11 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
     );
   }
 
-  Widget _buildSummaryCard(BoothSpotModel spot, BoothModel package) {
+  Widget _buildSummaryCard(
+    BoothSpotModel spot,
+    BoothModel package,
+  ) {
+    // Build selected booth summary inside form.
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -1574,7 +1777,7 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
           Text(
             widget.exhibition.name,
             style: const TextStyle(
-              fontWeight: FontWeight.bold, 
+              fontWeight: FontWeight.bold,
               fontSize: 15.5,
               color: AppColors.primaryText,
             ),
@@ -1594,7 +1797,7 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
               Text(
                 'RM ${package.price.toStringAsFixed(0)}',
                 style: const TextStyle(
-                  fontWeight: FontWeight.bold, 
+                  fontWeight: FontWeight.bold,
                   fontSize: 14.5,
                   color: AppColors.primaryAccent,
                 ),
@@ -1605,7 +1808,7 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
           Text(
             'Package: ${package.name} (${package.size})',
             style: TextStyle(
-              color: Colors.grey.shade500, 
+              color: Colors.grey.shade500,
               fontSize: 12.5,
             ),
           ),
@@ -1615,6 +1818,7 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
   }
 
   String _formatDate(DateTime date) {
+    // Format date for review display.
     return '${date.day}/${date.month}/${date.year}';
   }
 
@@ -1622,6 +1826,7 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
     required String title,
     required List<Widget> children,
   }) {
+    // Build reusable review section card.
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 20),
@@ -1657,7 +1862,12 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
     );
   }
 
-  Widget _buildReviewDetailRow(String label, String value, {bool isPrice = false}) {
+  Widget _buildReviewDetailRow(
+    String label,
+    String value, {
+    bool isPrice = false,
+  }) {
+    // Build one label-value row for review.
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1689,8 +1899,10 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
   }
 
   Widget _buildReviewStep() {
+    // Build review page before final submission.
     final boothProvider = context.watch<BoothProvider>();
     final authProvider = context.watch<AuthProvider>();
+
     final package = _selectedSpot != null
         ? boothProvider.boothPackages
             .where((p) => p.id == _selectedSpot!.boothPackageId)
@@ -1716,7 +1928,7 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Top checkout summary card
+            // Top application summary.
             Container(
               width: double.infinity,
               margin: const EdgeInsets.only(bottom: 24),
@@ -1775,7 +1987,6 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
               ),
             ),
 
-            // Event Information Section
             _buildReviewSection(
               title: 'Event Information',
               children: [
@@ -1790,7 +2001,6 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
               ],
             ),
 
-            // Selected Booth Section
             _buildReviewSection(
               title: 'Selected Booth',
               children: [
@@ -1800,44 +2010,58 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
                 const SizedBox(height: 12),
                 _buildReviewDetailRow('Size', package.size),
                 const SizedBox(height: 12),
-                _buildReviewDetailRow('Price', 'RM ${package.price.toStringAsFixed(0)}', isPrice: true),
+                _buildReviewDetailRow(
+                  'Price',
+                  'RM ${package.price.toStringAsFixed(0)}',
+                  isPrice: true,
+                ),
                 const SizedBox(height: 12),
                 _buildReviewDetailRow(
                   'Participation Period',
-                  (_participationStartDate != null && _participationEndDate != null)
+                  (_participationStartDate != null &&
+                          _participationEndDate != null)
                       ? '${_formatDate(_participationStartDate!)} - ${_formatDate(_participationEndDate!)}'
                       : 'Full Event Duration',
                 ),
               ],
             ),
 
-            // Company & Contact Information Section
             _buildReviewSection(
               title: 'Company & Contact Info',
               children: [
                 if (_companyController.text.trim().isNotEmpty) ...[
-                  _buildReviewDetailRow('Company Name', _companyController.text.trim()),
+                  _buildReviewDetailRow(
+                    'Company Name',
+                    _companyController.text.trim(),
+                  ),
                   const SizedBox(height: 12),
                 ],
                 if (_businessTypeController.text.trim().isNotEmpty) ...[
-                  _buildReviewDetailRow('Business Type', _businessTypeController.text.trim()),
+                  _buildReviewDetailRow(
+                    'Business Type',
+                    _businessTypeController.text.trim(),
+                  ),
                   const SizedBox(height: 12),
                 ],
-                if (currentUser?.name != null && currentUser!.name.isNotEmpty) ...[
+                if (currentUser?.name != null &&
+                    currentUser!.name.isNotEmpty) ...[
                   _buildReviewDetailRow('Contact Person', currentUser.name),
                   const SizedBox(height: 12),
                 ],
-                if (currentUser?.email != null && currentUser!.email.isNotEmpty) ...[
+                if (currentUser?.email != null &&
+                    currentUser!.email.isNotEmpty) ...[
                   _buildReviewDetailRow('Email Address', currentUser.email),
                 ],
               ],
             ),
 
-            // Booth Details Section
             _buildReviewSection(
               title: 'Booth Details',
               children: [
-                _buildReviewDetailRow('Showcasing', _productNameController.text.trim()),
+                _buildReviewDetailRow(
+                  'Showcasing',
+                  _productNameController.text.trim(),
+                ),
                 const SizedBox(height: 16),
                 Text(
                   'Description',
@@ -1860,7 +2084,6 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
               ],
             ),
 
-            // Included Amenities Section
             _buildReviewSection(
               title: 'Included Amenities',
               children: [
@@ -1879,16 +2102,26 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
                     runSpacing: 8,
                     children: package.amenities.map((a) {
                       return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.grey.shade50,
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.grey.shade200, width: 0.8),
+                          border: Border.all(
+                            color: Colors.grey.shade200,
+                            width: 0.8,
+                          ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.check, size: 13, color: Colors.green.shade600),
+                            Icon(
+                              Icons.check,
+                              size: 13,
+                              color: Colors.green.shade600,
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               a,
@@ -1906,7 +2139,6 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
               ],
             ),
 
-            // Additional Requirements Section
             _buildReviewSection(
               title: 'Additional Requirements',
               children: [
@@ -1925,11 +2157,19 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
                     runSpacing: 8,
                     children: _selectedRequirements.map((r) {
                       return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
-                          color: AppColors.primaryAccent.withValues(alpha: 0.05),
+                          color:
+                              AppColors.primaryAccent.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppColors.primaryAccent.withValues(alpha: 0.15), width: 0.8),
+                          border: Border.all(
+                            color:
+                                AppColors.primaryAccent.withValues(alpha: 0.15),
+                            width: 0.8,
+                          ),
                         ),
                         child: Text(
                           r,
@@ -1951,7 +2191,9 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
   }
 
   Widget _buildSuccessStep() {
+    // Build final success page after submission.
     final boothProvider = context.watch<BoothProvider>();
+
     final package = _selectedSpot != null
         ? boothProvider.boothPackages
             .where((p) => p.id == _selectedSpot!.boothPackageId)
@@ -2012,6 +2254,7 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Build multi-step booth application flow.
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -2039,32 +2282,32 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
         ),
       ),
       bottomSheet: Container(
-              padding: EdgeInsets.fromLTRB(
-                24,
-                20,
-                24,
-                MediaQuery.of(context).padding.bottom + 20,
-              ),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(32),
-                  topRight: Radius.circular(32),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, -4),
-                  ),
-                ],
-              ),
-              child: SizedBox(
-                width: double.infinity,
-                height: 62,
-                child: _buildBottomAction(),
-              ),
+        padding: EdgeInsets.fromLTRB(
+          24,
+          20,
+          24,
+          MediaQuery.of(context).padding.bottom + 20,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(32),
+            topRight: Radius.circular(32),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, -4),
             ),
+          ],
+        ),
+        child: SizedBox(
+          width: double.infinity,
+          height: 62,
+          child: _buildBottomAction(),
+        ),
+      ),
     );
   }
 }

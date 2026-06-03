@@ -26,17 +26,23 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   void initState() {
     super.initState();
+
+    // Set initial auth mode from route.
     _mode = widget.initialMode;
   }
 
   void _toggleMode() {
+    // Hide keyboard before switching form.
     FocusScope.of(context).unfocus();
+
+    // Switch between login and register form.
     setState(() {
       _mode = _mode == AuthMode.login ? AuthMode.register : AuthMode.login;
     });
   }
 
   void _handleClose() {
+    // Go back if possible, otherwise return to home.
     if (context.canPop()) {
       context.pop();
     } else {
@@ -51,7 +57,7 @@ class _AuthScreenState extends State<AuthScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Custom Header with Close Button
+            // Header close button.
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.screenHorizontal,
@@ -75,10 +81,12 @@ class _AuthScreenState extends State<AuthScreen> {
                 ],
               ),
             ),
-            
+
             Expanded(
               child: ScrollConfiguration(
-                behavior: ScrollConfiguration.of(context).copyWith(overscroll: false),
+                behavior: ScrollConfiguration.of(context).copyWith(
+                  overscroll: false,
+                ),
                 child: SingleChildScrollView(
                   physics: const ClampingScrollPhysics(),
                   padding: const EdgeInsets.symmetric(
@@ -87,11 +95,14 @@ class _AuthScreenState extends State<AuthScreen> {
                   child: Column(
                     children: [
                       const SizedBox(height: 12),
-                      // Centered Title and Subtitle
+
+                      // Dynamic title based on auth mode.
                       Column(
                         children: [
                           Text(
-                            _mode == AuthMode.login ? 'Welcome Back' : 'Create Account',
+                            _mode == AuthMode.login
+                                ? 'Welcome Back'
+                                : 'Create Account',
                             style: const TextStyle(
                               fontSize: 28,
                               fontWeight: FontWeight.bold,
@@ -100,8 +111,8 @@ class _AuthScreenState extends State<AuthScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            _mode == AuthMode.login 
-                                ? 'Please enter your details to sign in.' 
+                            _mode == AuthMode.login
+                                ? 'Please enter your details to sign in.'
                                 : 'Join Boothify and start your journey.',
                             textAlign: TextAlign.center,
                             style: const TextStyle(
@@ -112,12 +123,16 @@ class _AuthScreenState extends State<AuthScreen> {
                         ],
                       ),
                       const SizedBox(height: 40),
-                      
+
+                      // Animate between login and register forms.
                       AnimatedSwitcher(
                         duration: const Duration(milliseconds: 300),
                         switchInCurve: Curves.easeInOutCubic,
                         switchOutCurve: Curves.easeInOutCubic,
-                        transitionBuilder: (Widget child, Animation<double> animation) {
+                        transitionBuilder: (
+                          Widget child,
+                          Animation<double> animation,
+                        ) {
                           return FadeTransition(
                             opacity: animation,
                             child: SlideTransition(

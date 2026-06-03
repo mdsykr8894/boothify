@@ -19,7 +19,7 @@ class BoothModel {
     this.createdAt,
   });
 
-  /// Parse Firestore document data to BoothModel.
+  // Convert Firestore document data into BoothModel.
   factory BoothModel.fromMap(Map<String, dynamic> data, String documentId) {
     return BoothModel(
       id: documentId,
@@ -32,7 +32,7 @@ class BoothModel {
     );
   }
 
-  /// Convert BoothModel to Firestore-friendly map.
+  // Convert BoothModel into Firestore-friendly map.
   Map<String, dynamic> toMap() {
     return {
       'exhibitionId': exhibitionId,
@@ -40,11 +40,13 @@ class BoothModel {
       'size': size,
       'price': price,
       'amenities': amenities,
-      'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : FieldValue.serverTimestamp(),
+      'createdAt': createdAt != null
+          ? Timestamp.fromDate(createdAt!)
+          : FieldValue.serverTimestamp(),
     };
   }
 
-  /// Create a copy of BoothModel with updated fields.
+  // Create a new BoothModel with updated values.
   BoothModel copyWith({
     String? exhibitionId,
     String? name,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../constants/app_spacing.dart';
 import '../constants/app_text_styles.dart';
 
+// Reusable page header.
 class AppPageHeader extends StatelessWidget {
   final String title;
   final String? subtitle;
@@ -19,7 +20,7 @@ class AppPageHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!showBackButton) {
-      // Main Screen Header Style: Large, left-aligned
+      // Show main screen header.
       return Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.screenHorizontal,
@@ -45,7 +46,7 @@ class AppPageHeader extends StatelessWidget {
       );
     }
 
-    // Sub Screen Header Style: Compact, centered
+    // Show sub screen header.
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.screenHorizontal,
@@ -55,7 +56,7 @@ class AppPageHeader extends StatelessWidget {
         height: 48,
         child: Row(
           children: [
-            // Left Section (Back Button)
+            // Show back button.
             SizedBox(
               width: 48,
               child: IconButton(
@@ -65,7 +66,8 @@ class AppPageHeader extends StatelessWidget {
                 alignment: Alignment.centerLeft,
               ),
             ),
-            // Center Section (Title)
+
+            // Keep title centered.
             Expanded(
               child: Text(
                 title,
@@ -78,7 +80,8 @@ class AppPageHeader extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            // Right Section (Actions or Placeholder)
+
+            // Show right actions.
             SizedBox(
               width: 48,
               child: (actions != null && actions!.isNotEmpty)
@@ -94,7 +97,8 @@ class AppPageHeader extends StatelessWidget {
                             constraints: const BoxConstraints(),
                           );
                         }
-                        // Allow custom widgets like HeaderActionButton to pass through directly
+
+                        // Keep custom action widget.
                         return a;
                       }).toList(),
                     )
@@ -107,6 +111,7 @@ class AppPageHeader extends StatelessWidget {
   }
 }
 
+// Reusable circular header action button.
 class HeaderActionButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback? onPressed;

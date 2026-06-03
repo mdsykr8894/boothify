@@ -13,6 +13,7 @@ import 'widgets/edit_user_bottom_sheet.dart';
 import 'widgets/edit_personal_info_bottom_sheet.dart';
 import '../../../../core/utils/feedback_helper.dart';
 
+// Display selected user details for admin.
 class AdminUserDetailsScreen extends StatefulWidget {
   final UserModel user;
 
@@ -23,42 +24,61 @@ class AdminUserDetailsScreen extends StatefulWidget {
 }
 
 class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen> {
+  // Store editable local user state.
   late UserModel _currentUser;
 
   @override
   void initState() {
     super.initState();
+
+    // Initialize selected user data.
     _currentUser = widget.user;
   }
 
   void _handleStatusToggle(BuildContext context) {
     final admin = context.read<AuthProvider>().currentUser;
+
+    // Prevent admin from deactivating own account.
     if (admin?.uid == _currentUser.uid) {
-      FeedbackHelper.showWarning(context, 'You cannot deactivate your own account.');
+      FeedbackHelper.showWarning(
+        context,
+        'You cannot deactivate your own account.',
+      );
       return;
     }
 
     final newStatus = !_currentUser.isActive;
+
     BaseDialog.show(
       context: context,
       title: newStatus ? 'Activate Account?' : 'Deactivate Account?',
-      message: newStatus 
-          ? 'This user will regain access to their account.' 
+      message: newStatus
+          ? 'This user will regain access to their account.'
           : 'This user will no longer be able to access their account.',
       variant: newStatus ? DialogVariant.info : DialogVariant.destructive,
       primaryLabel: newStatus ? 'Activate' : 'Deactivate',
       secondaryLabel: 'Cancel',
       onPrimaryPressed: () async {
         Navigator.pop(context);
+
         final provider = context.read<UserProvider>();
-        final success = await provider.updateUserActiveStatus(_currentUser.uid, newStatus);
-        
+
+        // Update user active status.
+        final success = await provider.updateUserActiveStatus(
+          _currentUser.uid,
+          newStatus,
+        );
+
         if (mounted && success) {
           setState(() {
             _currentUser = _currentUser.copyWith(isActive: newStatus);
           });
+
           if (context.mounted) {
-            FeedbackHelper.showSuccess(context, 'Account ${newStatus ? 'activated' : 'deactivated'}');
+            FeedbackHelper.showSuccess(
+              context,
+              'Account ${newStatus ? 'activated' : 'deactivated'}',
+            );
           }
         }
       },
@@ -66,6 +86,7 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen> {
   }
 
   void _showEditSheet() async {
+    // Open account edit bottom sheet.
     final updatedUser = await showModalBottomSheet<UserModel>(
       context: context,
       isScrollControlled: true,
@@ -81,6 +102,7 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen> {
   }
 
   void _showEditPersonalInfoSheet() async {
+    // Open personal info edit bottom sheet.
     final updatedUser = await showModalBottomSheet<UserModel>(
       context: context,
       isScrollControlled: true,
@@ -121,11 +143,11 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 1. Top Profile Summary Card
+                    // Show user profile summary.
                     _buildProfileSummaryCard(),
                     const SizedBox(height: 24),
 
-                    // 2. Account Information
+                    // Show account information header.
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -138,10 +160,19 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen> {
                             letterSpacing: 1.0,
                           ),
                         ),
+
+                        // Show account status badge.
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
-                            color: (_currentUser.isActive ? Colors.green : Colors.red).withValues(alpha: 0.1),
+                            color:
+                                (_currentUser.isActive
+                                        ? Colors.green
+                                        : Colors.red)
+                                    .withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(100),
                           ),
                           child: Text(
@@ -149,7 +180,9 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen> {
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
-                              color: _currentUser.isActive ? Colors.green : Colors.red,
+                              color: _currentUser.isActive
+                                  ? Colors.green
+                                  : Colors.red,
                               letterSpacing: 0.5,
                             ),
                           ),
@@ -157,15 +190,25 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
+
+                    // Show account information card.
                     _buildPremiumCard(
                       children: [
-                        _buildInfoRow(label: 'User ID', value: _currentUser.uid),
-                        _buildInfoRow(label: 'Email Address', value: _currentUser.email),
+                        _buildInfoRow(
+                          label: 'User ID',
+                          value: _currentUser.uid,
+                        ),
+                        _buildInfoRow(
+                          label: 'Email Address',
+                          value: _currentUser.email,
+                        ),
                         _buildInfoRow(label: 'Role', value: _currentUser.role),
                         _buildInfoRow(
                           label: 'Created At',
                           value: _currentUser.createdAt != null
-                              ? DateFormatHelper.formatDateTime(_currentUser.createdAt!)
+                              ? DateFormatHelper.formatDateTime(
+                                  _currentUser.createdAt!,
+                                )
                               : 'Not provided',
                           showDivider: false,
                         ),
@@ -173,7 +216,7 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen> {
                     ),
                     const SizedBox(height: 28),
 
-                    // 3. Personal Information
+                    // Show personal information header.
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -205,9 +248,14 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
+
+                    // Show personal information card.
                     _buildPremiumCard(
                       children: [
-                        _buildInfoRow(label: 'Legal Name', value: _currentUser.name),
+                        _buildInfoRow(
+                          label: 'Legal Name',
+                          value: _currentUser.name,
+                        ),
                         _buildInfoRow(
                           label: 'Preferred First Name',
                           value: _currentUser.preferredName?.isNotEmpty == true
@@ -228,7 +276,9 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen> {
                         ),
                         _buildInfoRow(
                           label: 'Residential Address',
-                          value: _currentUser.residentialAddress?.isNotEmpty == true
+                          value:
+                              _currentUser.residentialAddress?.isNotEmpty ==
+                                  true
                               ? _currentUser.residentialAddress!
                               : 'Not provided',
                         ),
@@ -240,7 +290,8 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen> {
                         ),
                         _buildInfoRow(
                           label: 'Emergency Contact',
-                          value: _currentUser.emergencyContact?.isNotEmpty == true
+                          value:
+                              _currentUser.emergencyContact?.isNotEmpty == true
                               ? _currentUser.emergencyContact!
                               : 'Not provided',
                           showDivider: false,
@@ -249,7 +300,7 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen> {
                     ),
                     const SizedBox(height: 28),
 
-                    // 4. Role specific cards
+                    // Show exhibitor company information.
                     if (_currentUser.role.toLowerCase() == 'exhibitor') ...[
                       Text(
                         'COMPANY INFORMATION',
@@ -277,19 +328,23 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen> {
                           ),
                           _buildInfoRow(
                             label: 'Registration Number',
-                            value: _currentUser.companyRegistration?.isNotEmpty == true
+                            value:
+                                _currentUser.companyRegistration?.isNotEmpty ==
+                                    true
                                 ? _currentUser.companyRegistration!
                                 : 'Not provided',
                           ),
                           _buildInfoRow(
                             label: 'Product Category',
-                            value: _currentUser.productCategory?.isNotEmpty == true
+                            value:
+                                _currentUser.productCategory?.isNotEmpty == true
                                 ? _currentUser.productCategory!
                                 : 'Not provided',
                           ),
                           _buildInfoRow(
                             label: 'Contact Person',
-                            value: _currentUser.contactPerson?.isNotEmpty == true
+                            value:
+                                _currentUser.contactPerson?.isNotEmpty == true
                                 ? _currentUser.contactPerson!
                                 : 'Not provided',
                           ),
@@ -309,7 +364,9 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen> {
                         ],
                       ),
                       const SizedBox(height: 28),
-                    ] else if (_currentUser.role.toLowerCase() == 'organizer') ...[
+                    ] else if (_currentUser.role.toLowerCase() ==
+                        'organizer') ...[
+                      // Show organizer information.
                       Text(
                         'ORGANIZATION INFORMATION',
                         style: TextStyle(
@@ -324,25 +381,33 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen> {
                         children: [
                           _buildInfoRow(
                             label: 'Organization Name',
-                            value: _currentUser.organizationName?.isNotEmpty == true
+                            value:
+                                _currentUser.organizationName?.isNotEmpty ==
+                                    true
                                 ? _currentUser.organizationName!
                                 : 'Not provided',
                           ),
                           _buildInfoRow(
                             label: 'Organizer Phone',
-                            value: _currentUser.organizerPhone?.isNotEmpty == true
+                            value:
+                                _currentUser.organizerPhone?.isNotEmpty == true
                                 ? _currentUser.organizerPhone!
                                 : 'Not provided',
                           ),
                           _buildInfoRow(
                             label: 'Organizer Email',
-                            value: _currentUser.organizerEmail?.isNotEmpty == true
+                            value:
+                                _currentUser.organizerEmail?.isNotEmpty == true
                                 ? _currentUser.organizerEmail!
                                 : 'Not provided',
                           ),
                           _buildInfoRow(
                             label: 'Verification Status',
-                            value: _currentUser.organizerVerificationStatus?.isNotEmpty == true
+                            value:
+                                _currentUser
+                                        .organizerVerificationStatus
+                                        ?.isNotEmpty ==
+                                    true
                                 ? _currentUser.organizerVerificationStatus!
                                 : 'Not provided',
                             showDivider: false,
@@ -355,7 +420,8 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen> {
                 ),
               ),
             ),
-            // Sticky Bottom Action Bar
+
+            // Show account activation action.
             _buildBottomStickyBar(context),
           ],
         ),
@@ -381,7 +447,7 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen> {
       ),
       child: Column(
         children: [
-          // Stacked dual-ring initials avatar
+          // Show user initials avatar.
           Container(
             width: 94,
             height: 94,
@@ -402,7 +468,9 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen> {
               ),
               alignment: Alignment.center,
               child: Text(
-                _currentUser.name.isNotEmpty ? _currentUser.name[0].toUpperCase() : '?',
+                _currentUser.name.isNotEmpty
+                    ? _currentUser.name[0].toUpperCase()
+                    : '?',
                 style: const TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
@@ -412,7 +480,8 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          // User name and role badge row
+
+          // Show user name and role.
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -431,7 +500,10 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen> {
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.primaryAccent.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(100),
@@ -449,7 +521,8 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen> {
             ],
           ),
           const SizedBox(height: 4),
-          // Email
+
+          // Show user email.
           Text(
             _currentUser.email,
             style: const TextStyle(
@@ -462,9 +535,7 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen> {
     );
   }
 
-  Widget _buildPremiumCard({
-    required List<Widget> children,
-  }) {
+  Widget _buildPremiumCard({required List<Widget> children}) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -515,11 +586,7 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen> {
         ),
         if (showDivider) ...[
           const SizedBox(height: 12),
-          Divider(
-            height: 1,
-            thickness: 1,
-            color: Colors.grey.shade100,
-          ),
+          Divider(height: 1, thickness: 1, color: Colors.grey.shade100),
           const SizedBox(height: 12),
         ],
       ],
@@ -546,7 +613,9 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen> {
       ),
       child: AppButton(
         text: _currentUser.isActive ? 'Deactivate Account' : 'Activate Account',
-        color: _currentUser.isActive ? AppColors.primaryAccent : AppColors.success,
+        color: _currentUser.isActive
+            ? AppColors.primaryAccent
+            : AppColors.success,
         isSecondary: true,
         onPressed: () => _handleStatusToggle(context),
       ),

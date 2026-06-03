@@ -20,27 +20,36 @@ import 'widgets/edit_exhibition_bottom_sheet.dart';
 import 'widgets/edit_event_information_bottom_sheet.dart';
 import 'widgets/manage_exhibition_images_bottom_sheet.dart';
 
+// Display selected exhibition details.
 class OrganizerExhibitionDetailsScreen extends StatefulWidget {
   final ExhibitionModel exhibition;
 
   const OrganizerExhibitionDetailsScreen({super.key, required this.exhibition});
 
   @override
-  State<OrganizerExhibitionDetailsScreen> createState() => _OrganizerExhibitionDetailsScreenState();
+  State<OrganizerExhibitionDetailsScreen> createState() =>
+      _OrganizerExhibitionDetailsScreenState();
 }
 
-class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDetailsScreen> {
+class _OrganizerExhibitionDetailsScreenState
+    extends State<OrganizerExhibitionDetailsScreen> {
   @override
   void initState() {
     super.initState();
+
+    // Load booth spots and applications after first frame.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<BoothSpotProvider>().fetchBoothSpots(widget.exhibition.id);
+
       final auth = context.read<AuthProvider>();
+
       if (auth.currentUser != null) {
         if (auth.currentUser!.role == 'Admin') {
           context.read<ApplicationProvider>().fetchAllApplications();
         } else {
-          context.read<ApplicationProvider>().fetchOrganizerApplications(auth.currentUser!.uid);
+          context.read<ApplicationProvider>().fetchOrganizerApplications(
+            auth.currentUser!.uid,
+          );
         }
       }
     });
@@ -52,7 +61,7 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
     final exhibitionProvider = context.watch<ExhibitionProvider>();
     final user = authProvider.currentUser;
 
-    // Watch provider to get latest data
+    // Get latest exhibition data from provider.
     final latestExhibition = exhibitionProvider.allExhibitions.firstWhere(
       (e) => e.id == widget.exhibition.id,
       orElse: () => exhibitionProvider.organizerExhibitions.firstWhere(
@@ -60,16 +69,17 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
         orElse: () => widget.exhibition,
       ),
     );
-    
-    final bool canEdit = user != null && (
-      user.role == 'Admin' || 
-      (user.role == 'Organizer' && user.uid == latestExhibition.organizerId)
-    );
+
+    // Check whether current user can edit.
+    final bool canEdit =
+        user != null &&
+        (user.role == 'Admin' ||
+            (user.role == 'Organizer' &&
+                user.uid == latestExhibition.organizerId));
 
     final bool showEditButtons = canEdit && !latestExhibition.isPublished;
-
     final bool isAdmin = user != null && user.role == 'Admin';
-    
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -97,32 +107,36 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
             ),
             Expanded(
               child: ScrollConfiguration(
-                behavior: ScrollConfiguration.of(context).copyWith(overscroll: false), // Disable overscroll stretch/bounce behavior
+                behavior: ScrollConfiguration.of(
+                  context,
+                ).copyWith(overscroll: false),
                 child: SingleChildScrollView(
                   physics: const ClampingScrollPhysics(),
                   padding: EdgeInsets.fromLTRB(
                     24,
-                    30, // After header before EVENT INFO: 30
+                    30,
                     24,
-                    isAdmin ? 96.0 : 32.0, // Optimized bottom padding
+                    isAdmin ? 96.0 : 32.0,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // 1. EVENT INFO
+                      // Show event information.
                       _buildSectionHeader('EVENT INFO'),
-                      const SizedBox(height: 12), // Section label to card: 12
+                      const SizedBox(height: 12),
                       _buildEventInfoCard(context, latestExhibition),
-                      const SizedBox(height: 34), // After each card before next section label: 34
+                      const SizedBox(height: 34),
 
-                      // 2. SUMMARY
+                      // Show summary section.
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           _buildSectionHeader('SUMMARY'),
                           Padding(
                             padding: const EdgeInsets.only(right: 4),
-                            child: _buildMiniBookingStatusBadge(latestExhibition.isBookingOpen),
+                            child: _buildMiniBookingStatusBadge(
+                              latestExhibition.isBookingOpen,
+                            ),
                           ),
                         ],
                       ),
@@ -130,26 +144,37 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
                       _buildSummaryCard(context, latestExhibition),
                       const SizedBox(height: 34),
 
-                      // 3. BOOKING AVAILABILITY
+                      // Show booking availability.
                       _buildSectionHeader('BOOKING AVAILABILITY'),
                       const SizedBox(height: 12),
-                      _buildBookingAvailabilitySection(context, latestExhibition),
+                      _buildBookingAvailabilitySection(
+                        context,
+                        latestExhibition,
+                      ),
                       const SizedBox(height: 34),
 
-                      // 4. MANAGEMENT ACTIONS
+                      // Show management actions.
                       _buildSectionHeader('MANAGEMENT ACTIONS'),
                       const SizedBox(height: 12),
-                      _buildManagementActionsCard(context, latestExhibition, isAdmin),
+                      _buildManagementActionsCard(
+                        context,
+                        latestExhibition,
+                        isAdmin,
+                      ),
                       const SizedBox(height: 34),
 
-                      // 5. EXHIBITION DETAILS
+                      // Show exhibition details.
                       _buildExhibitionDetailsSection(context, latestExhibition),
                       const SizedBox(height: 34),
 
-                      // 6. ADDITIONAL DETAILS
-                      _buildAdditionalDetailsSection(context, showEditButtons, latestExhibition),
+                      // Show additional event details.
+                      _buildAdditionalDetailsSection(
+                        context,
+                        showEditButtons,
+                        latestExhibition,
+                      ),
 
-                      // 6. ADMIN CONTEXT (Admin Only)
+                      // Show admin-only context.
                       if (isAdmin) ...[
                         _buildAdminContextSection(latestExhibition),
                       ],
@@ -161,19 +186,21 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
           ],
         ),
       ),
-      bottomNavigationBar: canEdit ? _buildBottomActionBar(context, latestExhibition, isAdmin) : null,
+      bottomNavigationBar: canEdit
+          ? _buildBottomActionBar(context, latestExhibition, isAdmin)
+          : null,
     );
   }
 
   Widget _buildMiniBookingStatusBadge(bool isOpen) {
-    final Color bgColor = isOpen 
-        ? const Color(0xFFF0FDF4) 
+    final Color bgColor = isOpen
+        ? const Color(0xFFF0FDF4)
         : const Color(0xFFFFF0F2);
-    final Color borderColor = isOpen 
-        ? const Color(0xFFDCFCE7) 
+    final Color borderColor = isOpen
+        ? const Color(0xFFDCFCE7)
         : const Color(0xFFFCDDE2);
-    final Color textColor = isOpen 
-        ? const Color(0xFF0F9D58) 
+    final Color textColor = isOpen
+        ? const Color(0xFF0F9D58)
         : AppColors.primaryAccent;
 
     return Container(
@@ -216,13 +243,17 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
     bool hasBackground = true,
   }) {
     return Container(
-      height: 26, // Fixed layout value: height around 26
-      padding: const EdgeInsets.symmetric(horizontal: 11), // Fixed layout value: horizontal padding 11
+      height: 26,
+      padding: const EdgeInsets.symmetric(horizontal: 11),
       decoration: BoxDecoration(
-        color: hasBackground ? color.withValues(alpha: 0.1) : Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(10), // Fixed layout value: radius 10
+        color: hasBackground
+            ? color.withValues(alpha: 0.1)
+            : Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: hasBackground ? color.withValues(alpha: 0.4) : Colors.grey.shade200,
+          color: hasBackground
+              ? color.withValues(alpha: 0.4)
+              : Colors.grey.shade200,
           width: 0.8,
         ),
       ),
@@ -235,8 +266,8 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
             label.toUpperCase(),
             style: TextStyle(
               color: hasBackground ? color : Colors.grey.shade600,
-              fontSize: 11, // Fixed layout value: fontSize 11
-              fontWeight: FontWeight.w700, // Fixed layout value: fontWeight w700
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
               letterSpacing: 0.5,
             ),
           ),
@@ -246,13 +277,14 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
   }
 
   Widget _buildEventInfoCard(BuildContext context, ExhibitionModel ex) {
-    final hasImage = ex.imageUrls.isNotEmpty && ex.imageUrls.first.trim().isNotEmpty;
+    final hasImage =
+        ex.imageUrls.isNotEmpty && ex.imageUrls.first.trim().isNotEmpty;
 
     return Container(
-      padding: const EdgeInsets.all(18.0), // Fixed layout value: padding EdgeInsets.all(18)
+      padding: const EdgeInsets.all(18.0),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24), // Fixed layout value: borderRadius 24
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.grey.shade100, width: 1.2),
         boxShadow: [
           BoxShadow(
@@ -265,13 +297,13 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Left thumbnail (92x92) - Visibly larger thumbnail container
+          // Show exhibition image thumbnail.
           Container(
-            width: 92, // Increased from 84 to exactly 92
+            width: 92,
             height: 92,
             decoration: BoxDecoration(
-              color: const Color(0xFFFDF4F6), // soft pink tint background
-              borderRadius: BorderRadius.circular(20), // Standardized 20px radius
+              color: const Color(0xFFFDF4F6),
+              borderRadius: BorderRadius.circular(20),
               border: Border.all(color: Colors.grey.shade100, width: 0.8),
             ),
             child: ClipRRect(
@@ -279,24 +311,25 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
               child: hasImage
                   ? Image.network(
                       ex.imageUrls.first,
-                      width: 92, // Explicitly specify width and height on the Image.network
+                      width: 92,
                       height: 92,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) => const Icon(
                         Icons.store_mall_directory_outlined,
-                        size: 34, // Increased size to 34
+                        size: 34,
                         color: Color(0xFFE8B2C1),
                       ),
                     )
                   : const Icon(
                       Icons.store_mall_directory_outlined,
-                      size: 34, // Increased size to 34
+                      size: 34,
                       color: Color(0xFFE8B2C1),
                     ),
             ),
           ),
-          const SizedBox(width: 18), // Fixed layout value: gap between thumbnail and text 18
-          // Right content column
+          const SizedBox(width: 18),
+
+          // Show event title and metadata.
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -304,25 +337,29 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
                 Text(
                   ex.name,
                   style: const TextStyle(
-                    fontSize: 18, // Fixed layout value: event title size 18
-                    fontWeight: FontWeight.w700, // Fixed layout value: event title weight w700
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
                     color: AppColors.primaryText,
                     height: 1.2,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 6), // title to location gap 6
+                const SizedBox(height: 6),
                 Row(
                   children: [
-                    Icon(Icons.location_on_outlined, size: 16, color: Colors.grey.shade400), // metadata icon size 16
+                    Icon(
+                      Icons.location_on_outlined,
+                      size: 16,
+                      color: Colors.grey.shade400,
+                    ),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
                         ex.location,
                         style: TextStyle(
                           color: Colors.grey.shade500,
-                          fontSize: 14, // Fixed layout value: metadata fontSize 14
+                          fontSize: 14,
                           fontWeight: FontWeight.w400,
                         ),
                         maxLines: 1,
@@ -331,17 +368,24 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
                     ),
                   ],
                 ),
-                const SizedBox(height: 6), // location/date row gap 6
+                const SizedBox(height: 6),
                 Row(
                   children: [
-                    Icon(Icons.calendar_today_outlined, size: 15, color: Colors.grey.shade400),
+                    Icon(
+                      Icons.calendar_today_outlined,
+                      size: 15,
+                      color: Colors.grey.shade400,
+                    ),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        DateFormatHelper.formatDateRange(ex.startDate, ex.endDate),
+                        DateFormatHelper.formatDateRange(
+                          ex.startDate,
+                          ex.endDate,
+                        ),
                         style: TextStyle(
                           color: Colors.grey.shade500,
-                          fontSize: 14, // Fixed layout value: metadata fontSize 14
+                          fontSize: 14,
                           fontWeight: FontWeight.w400,
                         ),
                         maxLines: 1,
@@ -350,19 +394,22 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
                     ),
                   ],
                 ),
-                const SizedBox(height: 10), // Fixed layout value: date to badge row gap 10
+                const SizedBox(height: 10),
+
+                // Show event and publish status.
                 Wrap(
-                  spacing: 8, // Fixed layout value: gap between badges 8
+                  spacing: 8,
                   runSpacing: 8,
                   children: [
-                    // Removed category badge from Event Info card
                     _buildStandardBadge(
                       label: ex.eventStatus,
                       color: StatusBadge.getStatusColor(ex.eventStatus),
                     ),
                     _buildStandardBadge(
                       label: ex.isPublished ? 'Published' : 'Draft',
-                      color: StatusBadge.getStatusColor(ex.isPublished ? 'published' : 'draft'),
+                      color: StatusBadge.getStatusColor(
+                        ex.isPublished ? 'published' : 'draft',
+                      ),
                     ),
                   ],
                 ),
@@ -380,25 +427,34 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
     final authProvider = context.watch<AuthProvider>();
     final user = authProvider.currentUser;
 
-    // Filter spots
-    final spots = boothSpotProvider.boothSpots.where((s) => s.exhibitionId == ex.id).toList();
+    // Count booth spots for this exhibition.
+    final spots = boothSpotProvider.boothSpots
+        .where((s) => s.exhibitionId == ex.id)
+        .toList();
     final totalBoothsCount = spots.length;
 
-    // Filter applications based on role
+    // Pick application source based on role.
     final List<ApplicationModel> apps;
     if (user != null && user.role == 'Admin') {
-      apps = applicationProvider.allApplications.where((a) => a.exhibitionId == ex.id).toList();
+      apps = applicationProvider.allApplications
+          .where((a) => a.exhibitionId == ex.id)
+          .toList();
     } else {
-      apps = applicationProvider.organizerApplications.where((a) => a.exhibitionId == ex.id).toList();
+      apps = applicationProvider.organizerApplications
+          .where((a) => a.exhibitionId == ex.id)
+          .toList();
     }
 
     final totalAppsCount = apps.length;
-    final pendingAppsCount = apps.where((a) => a.status == 'Pending').toList().length;
+    final pendingAppsCount = apps
+        .where((a) => a.status == 'Pending')
+        .toList()
+        .length;
 
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24), // Fixed layout value: borderRadius 24
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.grey.shade100, width: 1.2),
         boxShadow: [
           BoxShadow(
@@ -416,7 +472,7 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
             label: 'Total Booths',
             value: '$totalBoothsCount',
           ),
-          Divider(height: 1, color: Colors.grey.shade100, indent: 82), // Fixed layout value: divider starts after icon area (24 + 40 + 18 = 82)
+          Divider(height: 1, color: Colors.grey.shade100, indent: 82),
           _buildSummaryRow(
             icon: Icons.assignment_outlined,
             iconColor: Colors.grey.shade600,
@@ -426,7 +482,7 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
           Divider(height: 1, color: Colors.grey.shade100, indent: 82),
           _buildSummaryRow(
             icon: Icons.pending_actions_outlined,
-            iconColor: const Color(0xFFE8B2C1), // Pink important accent icon
+            iconColor: const Color(0xFFE8B2C1),
             label: 'Pending Applications',
             value: '$pendingAppsCount',
             isHighlight: pendingAppsCount > 0,
@@ -444,29 +500,25 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
     bool isHighlight = false,
   }) {
     return Container(
-      height: 70, // Fixed layout value: row height 70
-      padding: const EdgeInsets.symmetric(horizontal: 24), // Fixed layout value: padding Edgeinsets.horizontal(24)
+      height: 70,
+      padding: const EdgeInsets.symmetric(horizontal: 24),
       alignment: Alignment.center,
       child: Row(
         children: [
           SizedBox(
-            width: 40, // Fixed layout value: icon column width 40
+            width: 40,
             child: Align(
               alignment: Alignment.centerLeft,
-              child: Icon(
-                icon,
-                color: iconColor,
-                size: 22, // Fixed layout value: icon size 22
-              ),
+              child: Icon(icon, color: iconColor, size: 22),
             ),
           ),
-          const SizedBox(width: 18), // Fixed layout value: gap icon to text 18
+          const SizedBox(width: 18),
           Expanded(
             child: Text(
               label,
               style: const TextStyle(
-                fontWeight: FontWeight.w400, // Reduced from w500 to w400 for sleek elegance
-                fontSize: 16, // Fixed layout value: fontSize 16 strictly
+                fontWeight: FontWeight.w400,
+                fontSize: 16,
                 color: AppColors.primaryText,
               ),
             ),
@@ -474,9 +526,11 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
           Text(
             value,
             style: TextStyle(
-              fontWeight: FontWeight.w500, // Reduced from w600 to w500 for crisp elegance
+              fontWeight: FontWeight.w500,
               fontSize: 16,
-              color: isHighlight ? const Color(0xFFE8B2C1) : AppColors.primaryText,
+              color: isHighlight
+                  ? const Color(0xFFE8B2C1)
+                  : AppColors.primaryText,
             ),
           ),
         ],
@@ -484,13 +538,19 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
     );
   }
 
-  Widget _buildManagementActionsCard(BuildContext context, ExhibitionModel ex, bool isAdmin) {
-    final isFromAdmin = GoRouterState.of(context).matchedLocation.startsWith('/admin');
-    
+  Widget _buildManagementActionsCard(
+    BuildContext context,
+    ExhibitionModel ex,
+    bool isAdmin,
+  ) {
+    final isFromAdmin = GoRouterState.of(
+      context,
+    ).matchedLocation.startsWith('/admin');
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24), // Fixed layout value: borderRadius 24
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.grey.shade100, width: 1.2),
         boxShadow: [
           BoxShadow(
@@ -508,21 +568,27 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
               icon: Icons.map_outlined,
               title: 'Manage Floor Plan',
               onTap: () {
+                // Navigate to booth spots management.
                 context.push(
-                  isFromAdmin ? AppRoutes.adminBoothSpots : AppRoutes.organizerBoothSpots,
+                  isFromAdmin
+                      ? AppRoutes.adminBoothSpots
+                      : AppRoutes.organizerBoothSpots,
                   extra: ex,
                 );
               },
             ),
-            Divider(height: 1, color: Colors.grey.shade100, indent: 82), // Fixed layout value: divider indent 82
+            Divider(height: 1, color: Colors.grey.shade100, indent: 82),
           ],
           _buildManagementRowItem(
             context,
             icon: Icons.inventory_2_outlined,
             title: 'Booth Packages',
             onTap: () {
+              // Navigate to booth package management.
               context.push(
-                isFromAdmin ? AppRoutes.adminBoothPackages : AppRoutes.organizerBoothPackages,
+                isFromAdmin
+                    ? AppRoutes.adminBoothPackages
+                    : AppRoutes.organizerBoothPackages,
                 extra: ex,
               );
             },
@@ -530,16 +596,16 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
           Divider(height: 1, color: Colors.grey.shade100, indent: 82),
           _buildManagementRowItem(
             context,
-            icon: Icons.photo_library_outlined, // Image gallery icon
-            title: 'Event Images', // Restored Event Images Row - last item now
+            icon: Icons.photo_library_outlined,
+            title: 'Event Images',
             onTap: () {
+              // Open image management bottom sheet.
               showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
                 backgroundColor: Colors.transparent,
-                builder: (context) => ManageExhibitionImagesBottomSheet(
-                  exhibition: ex,
-                ),
+                builder: (context) =>
+                    ManageExhibitionImagesBottomSheet(exhibition: ex),
               );
             },
           ),
@@ -558,105 +624,108 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
       onTap: onTap,
       borderRadius: BorderRadius.circular(24),
       child: Container(
-        height: 70, // Fixed layout value: row height 70
-        padding: const EdgeInsets.symmetric(horizontal: 24), // Fixed layout value: padding EdgeInsets.horizontal(24)
+        height: 70,
+        padding: const EdgeInsets.symmetric(horizontal: 24),
         alignment: Alignment.center,
         child: Row(
           children: [
             SizedBox(
-              width: 40, // Fixed layout value: icon column width 40
+              width: 40,
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: Icon(
-                  icon,
-                  color: Colors.grey.shade600,
-                  size: 22, // Fixed layout value: icon size 22
-                ),
+                child: Icon(icon, color: Colors.grey.shade600, size: 22),
               ),
             ),
-            const SizedBox(width: 18), // Fixed layout value: gap icon to text 18
+            const SizedBox(width: 18),
             Expanded(
               child: Text(
                 title,
                 style: const TextStyle(
-                  fontWeight: FontWeight.w400, // Reduced from w500 to w400 for sleek elegance
-                  fontSize: 16, // Fixed layout value: fontSize 16 strictly
+                  fontWeight: FontWeight.w400,
+                  fontSize: 16,
                   color: AppColors.primaryText,
                 ),
               ),
             ),
-            Icon(
-              Icons.chevron_right,
-              color: Colors.grey.shade400,
-              size: 22, // Fixed layout value: chevron size 22
-            ),
+            Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 22),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildExhibitionDetailsSection(BuildContext context, ExhibitionModel ex) {
+  Widget _buildExhibitionDetailsSection(
+    BuildContext context,
+    ExhibitionModel ex,
+  ) {
     final List<Widget> items = [];
 
-    // 1. Category (always show, fallback to General)
-    items.add(_buildInfoRowItem(
-      Icons.category_outlined, 
-      'Category', 
-      ex.category.isNotEmpty ? ex.category : 'General',
-    ));
+    // Add category detail.
+    items.add(
+      _buildInfoRowItem(
+        Icons.category_outlined,
+        'Category',
+        ex.category.isNotEmpty ? ex.category : 'General',
+      ),
+    );
 
-    // 2. Event Type (always show, fallback to Not specified)
-    items.add(const SizedBox(height: 20)); // Spacing between rows: 20
-    items.add(_buildInfoRowItem(
-      Icons.layers_outlined, 
-      'Event Type', 
-      ex.eventType.isNotEmpty ? ex.eventType : 'Not specified',
-    ));
-
-    // 3. Location (always show)
+    // Add event type detail.
     items.add(const SizedBox(height: 20));
-    items.add(_buildInfoRowItem(
-      Icons.location_on_outlined, 
-      'Location', 
-      ex.location,
-    ));
+    items.add(
+      _buildInfoRowItem(
+        Icons.layers_outlined,
+        'Event Type',
+        ex.eventType.isNotEmpty ? ex.eventType : 'Not specified',
+      ),
+    );
 
-    // 4. Start Date (always show)
+    // Add location detail.
     items.add(const SizedBox(height: 20));
-    items.add(_buildInfoRowItem(
-      Icons.calendar_today_outlined, 
-      'Start Date', 
-      DateFormatHelper.formatDate(ex.startDate),
-    ));
+    items.add(
+      _buildInfoRowItem(Icons.location_on_outlined, 'Location', ex.location),
+    );
 
-    // 5. End Date (always show)
+    // Add start date detail.
     items.add(const SizedBox(height: 20));
-    items.add(_buildInfoRowItem(
-      Icons.calendar_month_outlined, 
-      'End Date', 
-      DateFormatHelper.formatDate(ex.endDate),
-    ));
+    items.add(
+      _buildInfoRowItem(
+        Icons.calendar_today_outlined,
+        'Start Date',
+        DateFormatHelper.formatDate(ex.startDate),
+      ),
+    );
 
-    // 6. Description (always show, fallback to No description)
+    // Add end date detail.
     items.add(const SizedBox(height: 20));
-    items.add(_buildInfoRowItem(
-      Icons.description_outlined, 
-      'Description', 
-      ex.description.isNotEmpty ? ex.description : 'No description provided.',
-    ));
+    items.add(
+      _buildInfoRowItem(
+        Icons.calendar_month_outlined,
+        'End Date',
+        DateFormatHelper.formatDate(ex.endDate),
+      ),
+    );
+
+    // Add description detail.
+    items.add(const SizedBox(height: 20));
+    items.add(
+      _buildInfoRowItem(
+        Icons.description_outlined,
+        'Description',
+        ex.description.isNotEmpty ? ex.description : 'No description provided.',
+      ),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionHeader('EXHIBITION DETAILS'),
-        const SizedBox(height: 12), // Section header to card gap 12
+        const SizedBox(height: 12),
         Container(
-          padding: const EdgeInsets.all(22.0), // Card padding: 22
+          padding: const EdgeInsets.all(22.0),
           width: double.infinity,
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24), // borderRadius 24
+            borderRadius: BorderRadius.circular(24),
             border: Border.all(color: Colors.grey.shade100, width: 1.2),
             boxShadow: [
               BoxShadow(
@@ -675,39 +744,51 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
     );
   }
 
-  Widget _buildAdditionalDetailsSection(BuildContext context, bool canEdit, ExhibitionModel ex) {
+  Widget _buildAdditionalDetailsSection(
+    BuildContext context,
+    bool canEdit,
+    ExhibitionModel ex,
+  ) {
     final List<Widget> items = [];
 
-    // 1. Contact Email
-    items.add(_buildInfoRowItem(
-      Icons.mail_outline, 
-      'Contact Email', 
-      ex.contactEmail.isNotEmpty ? ex.contactEmail : 'Not provided',
-    ));
+    // Add contact email detail.
+    items.add(
+      _buildInfoRowItem(
+        Icons.mail_outline,
+        'Contact Email',
+        ex.contactEmail.isNotEmpty ? ex.contactEmail : 'Not provided',
+      ),
+    );
 
-    // 2. Contact Phone
+    // Add contact phone detail.
     items.add(const SizedBox(height: 20));
-    items.add(_buildInfoRowItem(
-      Icons.phone_outlined, 
-      'Contact Phone', 
-      ex.contactPhone.isNotEmpty ? ex.contactPhone : 'Not provided',
-    ));
+    items.add(
+      _buildInfoRowItem(
+        Icons.phone_outlined,
+        'Contact Phone',
+        ex.contactPhone.isNotEmpty ? ex.contactPhone : 'Not provided',
+      ),
+    );
 
-    // 3. Opening Hours
+    // Add opening hours detail.
     items.add(const SizedBox(height: 20));
-    items.add(_buildInfoRowItem(
-      Icons.access_time, 
-      'Opening Hours', 
-      ex.openingHours.isNotEmpty ? ex.openingHours : 'Not provided',
-    ));
+    items.add(
+      _buildInfoRowItem(
+        Icons.access_time,
+        'Opening Hours',
+        ex.openingHours.isNotEmpty ? ex.openingHours : 'Not provided',
+      ),
+    );
 
-    // 4. Expected Visitors
+    // Add expected visitors detail.
     items.add(const SizedBox(height: 20));
-    items.add(_buildInfoRowItem(
-      Icons.people_outline, 
-      'Expected Visitors', 
-      ex.expectedVisitors.isNotEmpty ? ex.expectedVisitors : 'Not provided',
-    ));
+    items.add(
+      _buildInfoRowItem(
+        Icons.people_outline,
+        'Expected Visitors',
+        ex.expectedVisitors.isNotEmpty ? ex.expectedVisitors : 'Not provided',
+      ),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -727,19 +808,23 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                   onPressed: () {
+                    // Open event information editor.
                     showModalBottomSheet(
                       context: context,
                       isScrollControlled: true,
                       backgroundColor: Colors.transparent,
-                      builder: (context) => EditEventInformationBottomSheet(
-                        exhibition: ex,
-                      ),
+                      builder: (context) =>
+                          EditEventInformationBottomSheet(exhibition: ex),
                     );
                   },
-                  icon: const Icon(Icons.add_outlined, size: 16, color: AppColors.primaryAccent), // Plus icon: 16
+                  icon: const Icon(
+                    Icons.add_outlined,
+                    size: 16,
+                    color: AppColors.primaryAccent,
+                  ),
                   label: const Row(
                     children: [
-                      SizedBox(width: 6), // Gap: 6
+                      SizedBox(width: 6),
                       Text(
                         'Add Info',
                         style: TextStyle(
@@ -754,13 +839,13 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
               ),
           ],
         ),
-        const SizedBox(height: 12), // Section header to card gap 12
+        const SizedBox(height: 12),
         Container(
-          padding: const EdgeInsets.all(22.0), // Card padding: 22
+          padding: const EdgeInsets.all(22.0),
           width: double.infinity,
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24), // borderRadius 24
+            borderRadius: BorderRadius.circular(24),
             border: Border.all(color: Colors.grey.shade100, width: 1.2),
             boxShadow: [
               BoxShadow(
@@ -784,17 +869,13 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          width: 36, // Icon column width: 36
+          width: 36,
           child: Align(
             alignment: Alignment.centerLeft,
-            child: Icon(
-              icon,
-              size: 22, // Icon size: 22, plain grey
-              color: Colors.grey.shade400,
-            ),
+            child: Icon(icon, size: 22, color: Colors.grey.shade400),
           ),
         ),
-        const SizedBox(width: 18), // Gap icon to text: 18
+        const SizedBox(width: 18),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -803,16 +884,16 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
                 label,
                 style: TextStyle(
                   color: Colors.grey.shade500,
-                  fontSize: 13, // Label size: 13
-                  fontWeight: FontWeight.w400, // Lighter label: w400
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 value,
                 style: const TextStyle(
-                  fontWeight: FontWeight.w500, // Softer value: w500
-                  fontSize: 15.5, // Value size: 15.5
+                  fontWeight: FontWeight.w500,
+                  fontSize: 15.5,
                   color: AppColors.primaryText,
                 ),
               ),
@@ -823,20 +904,21 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
     );
   }
 
-  Widget _buildBookingAvailabilitySection(BuildContext context, ExhibitionModel ex) {
+  Widget _buildBookingAvailabilitySection(
+    BuildContext context,
+    ExhibitionModel ex,
+  ) {
     final bool isOpen = ex.isBookingOpen;
 
-    final Color bgColor = isOpen 
-        ? const Color(0xFFF0FDF4) // Soft active green background
-        : const Color(0xFFFFF0F2); // Soft warning red/pink background
-
-    final Color borderColor = isOpen 
-        ? const Color(0xFFDCFCE7) // Soft active green border
-        : const Color(0xFFFCDDE2); // Soft warning red/pink border
-
-    final Color iconTextColor = isOpen 
-        ? const Color(0xFF0F9D58) // Active green
-        : AppColors.primaryAccent; // Warning red/pink
+    final Color bgColor = isOpen
+        ? const Color(0xFFF0FDF4)
+        : const Color(0xFFFFF0F2);
+    final Color borderColor = isOpen
+        ? const Color(0xFFDCFCE7)
+        : const Color(0xFFFCDDE2);
+    final Color iconTextColor = isOpen
+        ? const Color(0xFF0F9D58)
+        : AppColors.primaryAccent;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
@@ -884,8 +966,8 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  isOpen 
-                      ? 'Exhibitors can view and apply.' 
+                  isOpen
+                      ? 'Exhibitors can view and apply.'
                       : 'Exhibitors cannot apply right now.',
                   style: TextStyle(
                     fontSize: 13,
@@ -904,7 +986,9 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
                   onPressed: () => _handleToggleBooking(context, ex),
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size(80, 40),
-                    backgroundColor: const Color(0xFF0F9D58).withValues(alpha: 0.05),
+                    backgroundColor: const Color(
+                      0xFF0F9D58,
+                    ).withValues(alpha: 0.05),
                     side: const BorderSide(
                       color: Color(0xFF0F9D58),
                       width: 1.2,
@@ -948,16 +1032,20 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
     );
   }
 
-  Future<void> _handleToggleBooking(BuildContext context, ExhibitionModel ex) async {
+  Future<void> _handleToggleBooking(
+    BuildContext context,
+    ExhibitionModel ex,
+  ) async {
     final provider = context.read<ExhibitionProvider>();
     final bool nextStatus = !ex.isBookingOpen;
 
     if (!nextStatus) {
-      // User is attempting to CLOSE booking -> Show confirmation dialog
+      // Confirm before closing booking.
       final confirm = await BaseDialog.show<bool>(
         context: context,
         title: 'Close Booking?',
-        message: 'Exhibitors will no longer be able to apply for this exhibition.',
+        message:
+            'Exhibitors will no longer be able to apply for this exhibition.',
         variant: DialogVariant.warning,
         primaryLabel: 'Close Booking',
         secondaryLabel: 'Cancel',
@@ -968,22 +1056,18 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
       if (confirm != true) return;
     }
 
+    // Update booking availability.
     final success = await provider.toggleBookingOpen(
-      ex.id, 
+      ex.id,
       nextStatus,
       ex.organizerId,
     );
+
     if (context.mounted) {
       if (success) {
-        FeedbackHelper.showSuccess(
-          context,
-          'Booking status updated',
-        );
+        FeedbackHelper.showSuccess(context, 'Booking status updated');
       } else {
-        FeedbackHelper.showError(
-          context,
-          'Update failed',
-        );
+        FeedbackHelper.showError(context, 'Update failed');
       }
     }
   }
@@ -991,9 +1075,10 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
   void _handleDelete(BuildContext context, ExhibitionModel ex) async {
     final auth = context.read<AuthProvider>();
     final user = auth.currentUser;
+
     if (user == null) return;
 
-    // 1. Role verification check (Owner Organizer or Admin)
+    // Verify delete permission.
     if (user.role == 'Organizer' && user.uid != ex.organizerId) {
       FeedbackHelper.showError(
         context,
@@ -1002,16 +1087,21 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
       return;
     }
 
-    // 2. Fetch applications count
     final applicationProvider = context.read<ApplicationProvider>();
+
+    // Check applications before delete.
     final List<ApplicationModel> apps;
     if (user.role == 'Admin') {
-      apps = applicationProvider.allApplications.where((a) => a.exhibitionId == ex.id).toList();
+      apps = applicationProvider.allApplications
+          .where((a) => a.exhibitionId == ex.id)
+          .toList();
     } else {
-      apps = applicationProvider.organizerApplications.where((a) => a.exhibitionId == ex.id).toList();
+      apps = applicationProvider.organizerApplications
+          .where((a) => a.exhibitionId == ex.id)
+          .toList();
     }
 
-    // 3. Block deletion if applications exist
+    // Block deletion when applications exist.
     if (apps.isNotEmpty) {
       FeedbackHelper.showWarning(
         context,
@@ -1020,11 +1110,12 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
       return;
     }
 
-    // 4. Show confirmation dialog
+    // Confirm before deleting exhibition.
     final confirm = await BaseDialog.show<bool>(
       context: context,
       title: 'Delete Exhibition',
-      message: 'Are you sure you want to delete this exhibition? This action cannot be undone. This will also delete its booth packages and booth spots.',
+      message:
+          'Are you sure you want to delete this exhibition? This action cannot be undone. This will also delete its booth packages and booth spots.',
       variant: DialogVariant.destructive,
       primaryLabel: 'Delete',
       secondaryLabel: 'Cancel',
@@ -1034,6 +1125,8 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
 
     if (confirm == true && context.mounted) {
       final provider = context.read<ExhibitionProvider>();
+
+      // Delete exhibition through provider.
       final success = await provider.deleteExhibition(ex.id, ex.organizerId);
 
       if (context.mounted) {
@@ -1042,7 +1135,7 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
             context,
             'Exhibition deleted successfully!',
           );
-          context.pop(); // Navigate back to exhibition list
+          context.pop();
         } else {
           FeedbackHelper.showError(
             context,
@@ -1053,7 +1146,11 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
     }
   }
 
-  Widget _buildBottomActionBar(BuildContext context, ExhibitionModel ex, bool isAdmin) {
+  Widget _buildBottomActionBar(
+    BuildContext context,
+    ExhibitionModel ex,
+    bool isAdmin,
+  ) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -1069,9 +1166,7 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
             spreadRadius: 0,
           ),
         ],
-        border: Border(
-          top: BorderSide(color: Colors.grey.shade100, width: 1),
-        ),
+        border: Border(top: BorderSide(color: Colors.grey.shade100, width: 1)),
       ),
       child: SafeArea(
         top: false,
@@ -1099,14 +1194,16 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
                               color: AppColors.primaryText,
                               height: 56,
                               borderRadius: 16,
-                              onPressed: () => _showPublishConfirmation(context, ex),
+                              onPressed: () =>
+                                  _showPublishConfirmation(context, ex),
                             )
                           : AppButton(
                               text: 'Publish Event',
                               color: AppColors.primaryAccent,
                               height: 56,
                               borderRadius: 16,
-                              onPressed: () => _showPublishConfirmation(context, ex),
+                              onPressed: () =>
+                                  _showPublishConfirmation(context, ex),
                             ),
                     ),
                   ],
@@ -1124,9 +1221,13 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
     );
   }
 
-  Future<void> _showPublishConfirmation(BuildContext context, ExhibitionModel ex) async {
+  Future<void> _showPublishConfirmation(
+    BuildContext context,
+    ExhibitionModel ex,
+  ) async {
     final willPublish = !ex.isPublished;
-    
+
+    // Block completed exhibitions from publishing.
     if (ex.eventStatus == 'Completed' && willPublish) {
       FeedbackHelper.showWarning(
         context,
@@ -1135,6 +1236,7 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
       return;
     }
 
+    // Confirm publish status change.
     final confirm = await BaseDialog.show<bool>(
       context: context,
       title: willPublish ? 'Publish Event?' : 'Unpublish Event?',
@@ -1150,6 +1252,8 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
 
     if (confirm == true && context.mounted) {
       final provider = context.read<ExhibitionProvider>();
+
+      // Update publish status through provider.
       final success = await provider.togglePublish(
         ex.id,
         willPublish,
@@ -1182,7 +1286,9 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
         ? DateFormatHelper.formatDateTime(ex.updatedAt!)
         : 'N/A';
     final String publishStatus = ex.isPublished ? 'Published' : 'Draft';
-    final String bookingStatus = ex.isBookingOpen ? 'Booking Open' : 'Booking Closed';
+    final String bookingStatus = ex.isBookingOpen
+        ? 'Booking Open'
+        : 'Booking Closed';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1190,7 +1296,8 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
         const SizedBox(height: 34),
         _buildSectionHeader('ADMIN CONTEXT'),
         const SizedBox(height: 12),
-        // Technical Details Card
+
+        // Show admin technical details.
         Container(
           margin: const EdgeInsets.only(bottom: 20),
           width: double.infinity,
@@ -1205,7 +1312,11 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
             children: [
               Row(
                 children: [
-                  Icon(Icons.admin_panel_settings_outlined, size: 16, color: Colors.grey.shade600),
+                  Icon(
+                    Icons.admin_panel_settings_outlined,
+                    size: 16,
+                    color: Colors.grey.shade600,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     'TECHNICAL DETAILS',
@@ -1219,12 +1330,36 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
                 ],
               ),
               const SizedBox(height: 16),
-              _buildAdminInfoRow(label: 'Exhibition ID', value: ex.id, showDivider: true),
-              _buildAdminInfoRow(label: 'Created By ID', value: ex.organizerId, showDivider: true),
-              _buildAdminInfoRow(label: 'Publish Status', value: publishStatus, showDivider: true),
-              _buildAdminInfoRow(label: 'Booking Status', value: bookingStatus, showDivider: true),
-              _buildAdminInfoRow(label: 'Created At', value: createdStr, showDivider: true),
-              _buildAdminInfoRow(label: 'Updated At', value: updatedStr, showDivider: false),
+              _buildAdminInfoRow(
+                label: 'Exhibition ID',
+                value: ex.id,
+                showDivider: true,
+              ),
+              _buildAdminInfoRow(
+                label: 'Created By ID',
+                value: ex.organizerId,
+                showDivider: true,
+              ),
+              _buildAdminInfoRow(
+                label: 'Publish Status',
+                value: publishStatus,
+                showDivider: true,
+              ),
+              _buildAdminInfoRow(
+                label: 'Booking Status',
+                value: bookingStatus,
+                showDivider: true,
+              ),
+              _buildAdminInfoRow(
+                label: 'Created At',
+                value: createdStr,
+                showDivider: true,
+              ),
+              _buildAdminInfoRow(
+                label: 'Updated At',
+                value: updatedStr,
+                showDivider: false,
+              ),
             ],
           ),
         ),
@@ -1266,7 +1401,9 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
                       style: TextStyle(
                         fontSize: 14.5,
                         fontWeight: FontWeight.w600,
-                        color: hasValue ? AppColors.primaryText : Colors.grey.shade400,
+                        color: hasValue
+                            ? AppColors.primaryText
+                            : Colors.grey.shade400,
                         height: 1.3,
                       ),
                     ),
@@ -1277,11 +1414,7 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
           ),
           if (showDivider) ...[
             const SizedBox(height: 12),
-            Divider(
-              height: 1,
-              thickness: 1,
-              color: Colors.grey.shade100,
-            ),
+            Divider(height: 1, thickness: 1, color: Colors.grey.shade100),
           ],
         ],
       ),

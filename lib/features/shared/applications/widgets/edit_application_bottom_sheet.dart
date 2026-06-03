@@ -15,16 +15,19 @@ import '../../../../providers/booth_spot_provider.dart';
 import '../../../../providers/exhibition_provider.dart';
 import '../../../../core/utils/feedback_helper.dart';
 
+// Bottom sheet for editing application details.
 class EditApplicationBottomSheet extends StatefulWidget {
   final ApplicationModel application;
 
   const EditApplicationBottomSheet({super.key, required this.application});
 
   @override
-  State<EditApplicationBottomSheet> createState() => _EditApplicationBottomSheetState();
+  State<EditApplicationBottomSheet> createState() =>
+      _EditApplicationBottomSheetState();
 }
 
-class _EditApplicationBottomSheetState extends State<EditApplicationBottomSheet> {
+class _EditApplicationBottomSheetState
+    extends State<EditApplicationBottomSheet> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _companyController;
   late TextEditingController _productController;
@@ -45,17 +48,27 @@ class _EditApplicationBottomSheetState extends State<EditApplicationBottomSheet>
   @override
   void initState() {
     super.initState();
-    _companyController = TextEditingController(text: widget.application.companyName);
-    _productController = TextEditingController(text: widget.application.productName);
-    _descriptionController = TextEditingController(text: widget.application.description);
+
+    // Fill form fields with current application data.
+    _companyController =
+        TextEditingController(text: widget.application.companyName);
+    _productController =
+        TextEditingController(text: widget.application.productName);
+    _descriptionController =
+        TextEditingController(text: widget.application.description);
     _selectedRequirements = List.from(widget.application.requirements);
 
-    // Resolve exhibition and initialize dates if already fetched
+    // Initialize participation dates from exhibition.
     final exhibitions = context.read<ExhibitionProvider>().allExhibitions;
-    final exhibition = exhibitions.where((e) => e.id == widget.application.exhibitionId).firstOrNull;
+    final exhibition = exhibitions
+        .where((e) => e.id == widget.application.exhibitionId)
+        .firstOrNull;
+
     if (exhibition != null) {
-      _participationStartDate = widget.application.participationStartDate ?? exhibition.startDate;
-      _participationEndDate = widget.application.participationEndDate ?? exhibition.endDate;
+      _participationStartDate =
+          widget.application.participationStartDate ?? exhibition.startDate;
+      _participationEndDate =
+          widget.application.participationEndDate ?? exhibition.endDate;
       _datesInitialized = true;
     }
   }
@@ -71,6 +84,7 @@ class _EditApplicationBottomSheetState extends State<EditApplicationBottomSheet>
 
   void _addCustomRequirement() {
     final text = _customRequirementController.text.trim();
+
     if (text.isEmpty) {
       setState(() {
         _formError = 'Please enter a requirement name.';
@@ -82,26 +96,36 @@ class _EditApplicationBottomSheetState extends State<EditApplicationBottomSheet>
       _formError = null;
     });
 
-    final isDuplicate = _selectedRequirements.any((r) => r.toLowerCase() == text.toLowerCase());
+    // Avoid duplicate custom requirements.
+    final isDuplicate = _selectedRequirements.any(
+      (r) => r.toLowerCase() == text.toLowerCase(),
+    );
+
     if (!isDuplicate) {
       setState(() {
         _selectedRequirements.add(text);
       });
     }
+
     _customRequirementController.clear();
   }
 
   Future<void> _selectParticipationDate(
-      BuildContext context, bool isStart, DateTime exhibitionStart, DateTime exhibitionEnd) async {
+    BuildContext context,
+    bool isStart,
+    DateTime exhibitionStart,
+    DateTime exhibitionEnd,
+  ) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: isStart 
-          ? (_participationStartDate ?? exhibitionStart) 
+      initialDate: isStart
+          ? (_participationStartDate ?? exhibitionStart)
           : (_participationEndDate ?? exhibitionEnd),
       firstDate: exhibitionStart,
       lastDate: exhibitionEnd,
       builder: (BuildContext context, Widget? child) {
         return Theme(
+          // Apply app date picker styling.
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
               primary: AppColors.primaryAccent,
@@ -129,16 +153,23 @@ class _EditApplicationBottomSheetState extends State<EditApplicationBottomSheet>
         );
       },
     );
+
     if (picked != null) {
       setState(() {
         if (isStart) {
           _participationStartDate = picked;
-          if (_participationEndDate != null && _participationStartDate!.isAfter(_participationEndDate!)) {
+
+          // Keep end date after start date.
+          if (_participationEndDate != null &&
+              _participationStartDate!.isAfter(_participationEndDate!)) {
             _participationEndDate = _participationStartDate;
           }
         } else {
           _participationEndDate = picked;
-          if (_participationStartDate != null && _participationEndDate!.isBefore(_participationStartDate!)) {
+
+          // Keep start date before end date.
+          if (_participationStartDate != null &&
+              _participationEndDate!.isBefore(_participationStartDate!)) {
             _participationStartDate = _participationEndDate;
           }
         }
@@ -150,17 +181,24 @@ class _EditApplicationBottomSheetState extends State<EditApplicationBottomSheet>
     final app = widget.application;
     final sameCompany = _companyController.text.trim() == app.companyName;
     final sameProduct = _productController.text.trim() == app.productName;
-    final sameDescription = _descriptionController.text.trim() == app.description;
+    final sameDescription =
+        _descriptionController.text.trim() == app.description;
 
-    final sameStartDate = _participationStartDate == app.participationStartDate;
+    final sameStartDate =
+        _participationStartDate == app.participationStartDate;
     final sameEndDate = _participationEndDate == app.participationEndDate;
 
-    // Requirements comparison
+    // Check requirement list changes.
     final reqsChanged = _selectedRequirements.length != app.requirements.length ||
         !_selectedRequirements.every((r) => app.requirements.contains(r)) ||
         !app.requirements.every((r) => _selectedRequirements.contains(r));
 
-    return !sameCompany || !sameProduct || !sameDescription || reqsChanged || !sameStartDate || !sameEndDate;
+    return !sameCompany ||
+        !sameProduct ||
+        !sameDescription ||
+        reqsChanged ||
+        !sameStartDate ||
+        !sameEndDate;
   }
 
   void _handleSave() async {
@@ -171,8 +209,11 @@ class _EditApplicationBottomSheetState extends State<EditApplicationBottomSheet>
     if (!_formKey.currentState!.validate()) return;
 
     final exhibitions = context.read<ExhibitionProvider>().allExhibitions;
-    final exhibition = exhibitions.where((e) => e.id == widget.application.exhibitionId).firstOrNull;
+    final exhibition = exhibitions
+        .where((e) => e.id == widget.application.exhibitionId)
+        .firstOrNull;
 
+    // Validate participation dates.
     if (exhibition != null) {
       if (_participationStartDate == null || _participationEndDate == null) {
         setState(() {
@@ -191,7 +232,8 @@ class _EditApplicationBottomSheetState extends State<EditApplicationBottomSheet>
       if (_participationStartDate!.isBefore(exhibition.startDate) ||
           _participationEndDate!.isAfter(exhibition.endDate)) {
         setState(() {
-          _formError = 'Participation dates must be within the exhibition duration.';
+          _formError =
+              'Participation dates must be within the exhibition duration.';
         });
         return;
       }
@@ -202,6 +244,7 @@ class _EditApplicationBottomSheetState extends State<EditApplicationBottomSheet>
 
     final hasChanges = _hasRealChanges();
 
+    // Prepare updated application data.
     final updatedApp = widget.application.copyWith(
       companyName: _companyController.text.trim(),
       productName: _productController.text.trim(),
@@ -216,6 +259,7 @@ class _EditApplicationBottomSheetState extends State<EditApplicationBottomSheet>
     if (mounted) {
       if (success) {
         navigator.pop(hasChanges);
+
         if (context.mounted) {
           FeedbackHelper.showSuccess(
             context,
@@ -295,6 +339,7 @@ class _EditApplicationBottomSheetState extends State<EditApplicationBottomSheet>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Show selected booth summary.
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -333,19 +378,22 @@ class _EditApplicationBottomSheetState extends State<EditApplicationBottomSheet>
     );
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     final boothProvider = context.watch<BoothProvider>();
     final spotProvider = context.watch<BoothSpotProvider>();
 
     final exhibitions = context.watch<ExhibitionProvider>().allExhibitions;
-    final exhibition = exhibitions.where((e) => e.id == widget.application.exhibitionId).firstOrNull;
+    final exhibition = exhibitions
+        .where((e) => e.id == widget.application.exhibitionId)
+        .firstOrNull;
 
+    // Initialize dates when exhibition data becomes available.
     if (exhibition != null && !_datesInitialized) {
-      _participationStartDate = widget.application.participationStartDate ?? exhibition.startDate;
-      _participationEndDate = widget.application.participationEndDate ?? exhibition.endDate;
+      _participationStartDate =
+          widget.application.participationStartDate ?? exhibition.startDate;
+      _participationEndDate =
+          widget.application.participationEndDate ?? exhibition.endDate;
       _datesInitialized = true;
     }
 
@@ -361,15 +409,17 @@ class _EditApplicationBottomSheetState extends State<EditApplicationBottomSheet>
     );
 
     final package = spot.boothPackageId.isNotEmpty
-        ? boothProvider.boothPackages.where((p) => p.id == spot.boothPackageId).firstOrNull
+        ? boothProvider.boothPackages
+            .where((p) => p.id == spot.boothPackageId)
+            .firstOrNull
         : null;
 
-    // Gather requirement chips
     final List<Widget> requirementChips = [];
 
-    // Pre-defined chips
+    // Build predefined requirement chips.
     for (var req in _availableRequirements) {
       final isSelected = _selectedRequirements.contains(req);
+
       requirementChips.add(
         FilterChip(
           label: Text(req),
@@ -396,8 +446,11 @@ class _EditApplicationBottomSheetState extends State<EditApplicationBottomSheet>
       );
     }
 
-    // Custom requirement chips (items in _selectedRequirements but not in _availableRequirements)
-    final customRequirements = _selectedRequirements.where((r) => !_availableRequirements.contains(r)).toList();
+    // Build custom requirement chips.
+    final customRequirements = _selectedRequirements
+        .where((r) => !_availableRequirements.contains(r))
+        .toList();
+
     for (var req in customRequirements) {
       requirementChips.add(
         FilterChip(
@@ -433,10 +486,14 @@ class _EditApplicationBottomSheetState extends State<EditApplicationBottomSheet>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Show form error message.
             if (_formError != null) ...[
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.primaryAccent.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(12),
@@ -468,10 +525,11 @@ class _EditApplicationBottomSheetState extends State<EditApplicationBottomSheet>
               ),
               const SizedBox(height: AppSpacing.m),
             ],
-            // Read-only Booth Spot & Package Summary
+
+            // Show booth and package summary.
             _buildSummaryCard(spot, package),
 
-            // Section 1: Company Information
+            // Show company information section.
             _buildSectionHeader('Company Information'),
             AppTextField(
               controller: _companyController,
@@ -486,7 +544,7 @@ class _EditApplicationBottomSheetState extends State<EditApplicationBottomSheet>
             ),
             const SizedBox(height: 14),
 
-            // Section 1.5: Participation Period
+            // Show participation date section.
             if (exhibition != null) ...[
               _buildSectionHeader('Participation Period'),
               Row(
@@ -494,14 +552,24 @@ class _EditApplicationBottomSheetState extends State<EditApplicationBottomSheet>
                   BottomSheetDateField(
                     innerLabel: 'Start Date',
                     date: _participationStartDate ?? exhibition.startDate,
-                    onTap: () => _selectParticipationDate(context, true, exhibition.startDate, exhibition.endDate),
+                    onTap: () => _selectParticipationDate(
+                      context,
+                      true,
+                      exhibition.startDate,
+                      exhibition.endDate,
+                    ),
                     dateFormat: DateFormat('d MMM yyyy'),
                   ),
                   const SizedBox(width: 16),
                   BottomSheetDateField(
                     innerLabel: 'End Date',
                     date: _participationEndDate ?? exhibition.endDate,
-                    onTap: () => _selectParticipationDate(context, false, exhibition.startDate, exhibition.endDate),
+                    onTap: () => _selectParticipationDate(
+                      context,
+                      false,
+                      exhibition.startDate,
+                      exhibition.endDate,
+                    ),
                     dateFormat: DateFormat('d MMM yyyy'),
                   ),
                 ],
@@ -520,7 +588,7 @@ class _EditApplicationBottomSheetState extends State<EditApplicationBottomSheet>
               const SizedBox(height: 14),
             ],
 
-            // Section 2: Booth Details
+            // Show booth details section.
             _buildSectionHeader('Booth Details'),
             AppTextField(
               controller: _productController,
@@ -537,7 +605,7 @@ class _EditApplicationBottomSheetState extends State<EditApplicationBottomSheet>
               validator: (v) => v == null || v.isEmpty ? 'Required' : null,
             ),
 
-            // Section 3: Included Amenities (Read-only)
+            // Show included amenities.
             if (package != null && package.amenities.isNotEmpty) ...[
               _buildSectionHeader('Included Amenities'),
               Wrap(
@@ -545,16 +613,26 @@ class _EditApplicationBottomSheetState extends State<EditApplicationBottomSheet>
                 runSpacing: 8,
                 children: package.amenities.map((a) {
                   return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.grey.shade50,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.grey.shade200, width: 0.8),
+                      border: Border.all(
+                        color: Colors.grey.shade200,
+                        width: 0.8,
+                      ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.check, size: 13, color: Colors.green.shade600),
+                        Icon(
+                          Icons.check,
+                          size: 13,
+                          color: Colors.green.shade600,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           a,
@@ -571,7 +649,7 @@ class _EditApplicationBottomSheetState extends State<EditApplicationBottomSheet>
               ),
             ],
 
-            // Section 4: Additional Requirements (Selectable chips + text input)
+            // Show additional requirement chips.
             _buildSectionHeader('Additional Requirements'),
             if (requirementChips.isNotEmpty) ...[
               Wrap(
@@ -581,6 +659,8 @@ class _EditApplicationBottomSheetState extends State<EditApplicationBottomSheet>
               ),
               const SizedBox(height: 12),
             ],
+
+            // Add custom requirement input.
             Row(
               children: [
                 Expanded(
@@ -598,7 +678,10 @@ class _EditApplicationBottomSheetState extends State<EditApplicationBottomSheet>
                         fontSize: 14,
                         fontWeight: FontWeight.w400,
                       ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
                       fillColor: Colors.white,
                       filled: true,
                       enabledBorder: OutlineInputBorder(
@@ -607,7 +690,10 @@ class _EditApplicationBottomSheetState extends State<EditApplicationBottomSheet>
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.primaryAccent, width: 1.5),
+                        borderSide: const BorderSide(
+                          color: AppColors.primaryAccent,
+                          width: 1.5,
+                        ),
                       ),
                     ),
                     onSubmitted: (_) => _addCustomRequirement(),

@@ -19,8 +19,8 @@ class ExhibitionModel {
   final String openingHours;
   final String expectedVisitors;
   final List<String> imageUrls;
-  
-  // Custom floor plan grid dimensions (nullable for backward compatibility)
+
+  // Optional floor layout grid size.
   final int? layoutRows;
   final int? layoutColumns;
 
@@ -47,26 +47,33 @@ class ExhibitionModel {
     this.layoutColumns,
   });
 
-  /// Computed getters for event status
+  // Return event status based on current date.
   String get eventStatus {
     if (isUpcoming) return 'Upcoming';
     if (isOngoing) return 'Ongoing';
     return 'Completed';
   }
 
+  // Check if event has not started yet.
   bool get isUpcoming => DateTime.now().isBefore(startDate);
 
+  // Check if event is currently running.
   bool get isOngoing {
     final now = DateTime.now();
     return now.isAfter(startDate) && now.isBefore(endDate);
   }
 
+  // Check if event has already ended.
   bool get isCompleted => DateTime.now().isAfter(endDate);
 
+  // Decide whether exhibition should appear in explore screen.
   bool get shouldShowInExplore => isPublished && !isCompleted;
 
-  /// Parse Firestore document data to ExhibitionModel.
-  factory ExhibitionModel.fromMap(Map<String, dynamic> data, String documentId) {
+  // Convert Firestore document data into ExhibitionModel.
+  factory ExhibitionModel.fromMap(
+    Map<String, dynamic> data,
+    String documentId,
+  ) {
     return ExhibitionModel(
       id: documentId,
       organizerId: data['organizerId'] ?? '',
@@ -91,7 +98,7 @@ class ExhibitionModel {
     );
   }
 
-  /// Convert ExhibitionModel to Firestore-friendly map.
+  // Convert ExhibitionModel into Firestore-friendly map.
   Map<String, dynamic> toMap() {
     return {
       'organizerId': organizerId,
@@ -102,8 +109,12 @@ class ExhibitionModel {
       'endDate': Timestamp.fromDate(endDate),
       'isPublished': isPublished,
       'isBookingOpen': isBookingOpen,
-      'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : FieldValue.serverTimestamp(),
-      'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : FieldValue.serverTimestamp(),
+      'createdAt': createdAt != null
+          ? Timestamp.fromDate(createdAt!)
+          : FieldValue.serverTimestamp(),
+      'updatedAt': updatedAt != null
+          ? Timestamp.fromDate(updatedAt!)
+          : FieldValue.serverTimestamp(),
       'category': category,
       'eventType': eventType,
       'contactEmail': contactEmail,
@@ -116,7 +127,7 @@ class ExhibitionModel {
     };
   }
 
-  /// Create a copy of ExhibitionModel with updated fields.
+  // Create a new ExhibitionModel with updated values.
   ExhibitionModel copyWith({
     String? id,
     String? organizerId,

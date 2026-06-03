@@ -8,16 +8,19 @@ import '../../../../data/models/user_model.dart';
 import '../../../../providers/user_provider.dart';
 import '../../../../core/utils/feedback_helper.dart';
 
+// Bottom sheet for editing user personal information.
 class EditPersonalInfoBottomSheet extends StatefulWidget {
   final UserModel user;
 
   const EditPersonalInfoBottomSheet({super.key, required this.user});
 
   @override
-  State<EditPersonalInfoBottomSheet> createState() => _EditPersonalInfoBottomSheetState();
+  State<EditPersonalInfoBottomSheet> createState() =>
+      _EditPersonalInfoBottomSheetState();
 }
 
-class _EditPersonalInfoBottomSheetState extends State<EditPersonalInfoBottomSheet> {
+class _EditPersonalInfoBottomSheetState
+    extends State<EditPersonalInfoBottomSheet> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late TextEditingController _preferredNameController;
@@ -31,13 +34,27 @@ class _EditPersonalInfoBottomSheetState extends State<EditPersonalInfoBottomShee
   @override
   void initState() {
     super.initState();
+
+    // Fill form with current personal information.
     _nameController = TextEditingController(text: widget.user.name);
-    _preferredNameController = TextEditingController(text: widget.user.preferredName);
-    _phoneNumberController = TextEditingController(text: widget.user.phoneNumber);
-    _contactEmailController = TextEditingController(text: widget.user.contactEmail ?? widget.user.email);
-    _residentialAddressController = TextEditingController(text: widget.user.residentialAddress);
-    _postalAddressController = TextEditingController(text: widget.user.postalAddress);
-    _emergencyContactController = TextEditingController(text: widget.user.emergencyContact);
+    _preferredNameController = TextEditingController(
+      text: widget.user.preferredName,
+    );
+    _phoneNumberController = TextEditingController(
+      text: widget.user.phoneNumber,
+    );
+    _contactEmailController = TextEditingController(
+      text: widget.user.contactEmail ?? widget.user.email,
+    );
+    _residentialAddressController = TextEditingController(
+      text: widget.user.residentialAddress,
+    );
+    _postalAddressController = TextEditingController(
+      text: widget.user.postalAddress,
+    );
+    _emergencyContactController = TextEditingController(
+      text: widget.user.emergencyContact,
+    );
   }
 
   @override
@@ -59,6 +76,7 @@ class _EditPersonalInfoBottomSheetState extends State<EditPersonalInfoBottomShee
 
     if (!_formKey.currentState!.validate()) return;
 
+    // Prepare edited personal information fields.
     final fields = {
       'name': _nameController.text.trim(),
       'preferredName': _preferredNameController.text.trim(),
@@ -70,10 +88,13 @@ class _EditPersonalInfoBottomSheetState extends State<EditPersonalInfoBottomShee
     };
 
     final provider = context.read<UserProvider>();
+
+    // Save personal information through provider.
     final success = await provider.updateUserFields(widget.user.uid, fields);
 
     if (mounted) {
       if (success) {
+        // Build updated local user model.
         final updatedUser = widget.user.copyWith(
           name: fields['name'],
           preferredName: fields['preferredName'],
@@ -83,8 +104,12 @@ class _EditPersonalInfoBottomSheetState extends State<EditPersonalInfoBottomShee
           postalAddress: fields['postalAddress'],
           emergencyContact: fields['emergencyContact'],
         );
+
         Navigator.pop(context, updatedUser);
-        FeedbackHelper.showSuccess(context, 'Personal information updated successfully');
+        FeedbackHelper.showSuccess(
+          context,
+          'Personal information updated successfully',
+        );
       } else {
         setState(() {
           _formError = 'Update failed. Please try again.';
@@ -107,10 +132,14 @@ class _EditPersonalInfoBottomSheetState extends State<EditPersonalInfoBottomShee
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Show form error message.
             if (_formError != null) ...[
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.primaryAccent.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(12),
@@ -142,6 +171,8 @@ class _EditPersonalInfoBottomSheetState extends State<EditPersonalInfoBottomShee
               ),
               const SizedBox(height: AppSpacing.m),
             ],
+
+            // Edit legal name.
             AppTextField(
               controller: _nameController,
               label: 'Legal Name',
@@ -149,36 +180,48 @@ class _EditPersonalInfoBottomSheetState extends State<EditPersonalInfoBottomShee
               validator: (v) => v == null || v.isEmpty ? 'Required' : null,
             ),
             const SizedBox(height: AppSpacing.m),
+
+            // Edit preferred first name.
             AppTextField(
               controller: _preferredNameController,
               label: 'Preferred First Name',
               hint: 'Enter preferred first name',
             ),
             const SizedBox(height: AppSpacing.m),
+
+            // Edit phone number.
             AppTextField(
               controller: _phoneNumberController,
               label: 'Phone Number',
               hint: 'Enter phone number',
             ),
             const SizedBox(height: AppSpacing.m),
+
+            // Edit contact email.
             AppTextField(
               controller: _contactEmailController,
               label: 'Contact Email',
               hint: 'Enter contact email address',
             ),
             const SizedBox(height: AppSpacing.m),
+
+            // Edit residential address.
             AppTextField(
               controller: _residentialAddressController,
               label: 'Residential Address',
               hint: 'Enter residential address',
             ),
             const SizedBox(height: AppSpacing.m),
+
+            // Edit postal address.
             AppTextField(
               controller: _postalAddressController,
               label: 'Postal Address',
               hint: 'Enter postal address',
             ),
             const SizedBox(height: AppSpacing.m),
+
+            // Edit emergency contact.
             AppTextField(
               controller: _emergencyContactController,
               label: 'Emergency Contact',

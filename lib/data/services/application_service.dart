@@ -7,61 +7,82 @@ class ApplicationService {
   final String _collection = 'applications';
   final String _boothSpotsCollection = 'booth_spots';
 
-  /// Submit an application and update the selected booth spot to 'Pending'.
-  /// Uses a transaction to prevent double booking.
   Future<bool> submitApplication(ApplicationModel application) async {
     try {
+      // Use transaction to prevent double booking.
       await _firestore.runTransaction((transaction) async {
-        // 1. Get latest booth spot data
-        final spotRef = _firestore.collection(_boothSpotsCollection).doc(application.boothSpotId);
+        // Get latest booth spot data.
+        final spotRef = _firestore
+            .collection(_boothSpotsCollection)
+            .doc(application.boothSpotId);
+
         final spotDoc = await transaction.get(spotRef);
 
+        // Stop if booth spot does not exist.
         if (!spotDoc.exists) {
           throw Exception('Booth spot not found');
         }
 
-        // 2. Check if still available
+        // Check if booth spot is still available.
         final status = spotDoc.data()?['status'] ?? '';
+
         if (status != 'Available') {
-          throw Exception('This booth is no longer available. Please choose another booth.');
+          throw Exception(
+            'This booth is no longer available. Please choose another booth.',
+          );
         }
 
-        // 2.5. Check competitor adjacency rules
+        // Get existing applications for the same exhibition.
         final activeAppsSnapshot = await _firestore
             .collection(_collection)
             .where('exhibitionId', isEqualTo: application.exhibitionId)
             .get();
 
-        final normalizedNewBusinessType = application.businessType.trim().toLowerCase();
+        // Normalize new business type for comparison.
+        final normalizedNewBusinessType = application.businessType
+            .trim()
+            .toLowerCase();
 
         for (final doc in activeAppsSnapshot.docs) {
-          // Skip check if the existing application has the same ID to avoid self-conflict
+          // Skip same application during conflict check.
           if (doc.id == application.id) continue;
 
           final appData = doc.data();
           final appStatus = appData['status'] ?? '';
-          
+
+          // Check only active or reserved applications.
           if (appStatus == 'Pending' ||
               appStatus == 'Approved' ||
               appStatus == 'Paid' ||
               appStatus == 'Booked') {
-            final existingBusinessType = (appData['businessType'] as String? ?? '').trim().toLowerCase();
+            final existingBusinessType =
+                (appData['businessType'] as String? ?? '').trim().toLowerCase();
+
+            // Check nearby booth if business type is similar.
             if (existingBusinessType == normalizedNewBusinessType) {
-              final existingBoothNumber = appData['boothNumber'] as String? ?? '';
-              if (_isAdjacentSpot(application.boothNumber, existingBoothNumber)) {
-                throw Exception('A nearby booth is already reserved by a similar business type. Please choose another booth.');
+              final existingBoothNumber =
+                  appData['boothNumber'] as String? ?? '';
+
+              if (_isAdjacentSpot(
+                application.boothNumber,
+                existingBoothNumber,
+              )) {
+                throw Exception(
+                  'A nearby booth is already reserved by a similar business type. Please choose another booth.',
+                );
               }
             }
           }
         }
 
-        // 3. Create application document
+        // Create new application document.
         final appRef = _firestore.collection(_collection).doc();
         transaction.set(appRef, application.toMap());
 
-        // 4. Update booth spot status to Pending
+        // Mark selected booth spot as pending.
         transaction.update(spotRef, {'status': 'Pending'});
       });
+
       return true;
     } catch (e) {
       debugPrint('Error submitting application: $e');
@@ -69,45 +90,56 @@ class ApplicationService {
     }
   }
 
-  /// Helper to check if two booth spot numbers are horizontally or vertically adjacent.
   bool _isAdjacentSpot(String spot1, String spot2) {
+    // Return false if booth spot format is invalid.
     if (spot1.length < 2 || spot2.length < 2) return false;
 
+    // Extract row and column from first booth spot.
     final row1 = spot1[0].toUpperCase().codeUnitAt(0);
     final col1 = int.tryParse(spot1.substring(1));
 
+    // Extract row and column from second booth spot.
     final row2 = spot2[0].toUpperCase().codeUnitAt(0);
     final col2 = int.tryParse(spot2.substring(1));
 
+    // Return false if column cannot be parsed.
     if (col1 == null || col2 == null) return false;
 
+    // Calculate row and column distance.
     final rowDiff = (row1 - row2).abs();
     final colDiff = (col1 - col2).abs();
 
-    // Horizontal adjacency: same row, columns difference is exactly 1
-    // Vertical adjacency: same column, rows difference is exactly 1
+    // Adjacent means next to each other horizontally or vertically.
     return (rowDiff == 0 && colDiff == 1) || (rowDiff == 1 && colDiff == 0);
   }
 
   int _compareByUpdatedOrCreated(ApplicationModel a, ApplicationModel b) {
-    final aDate = a.updatedAt ?? a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-    final bDate = b.updatedAt ?? b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+    // Sort by updated date first, then created date.
+    final aDate =
+        a.updatedAt ?? a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+    final bDate =
+        b.updatedAt ?? b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+
+    // Latest application appears first.
     return bDate.compareTo(aDate);
   }
 
-  /// Fetch applications for a specific user (Exhibitor).
   Future<List<ApplicationModel>> fetchUserApplications(String userId) async {
     try {
+      // Fetch applications submitted by one exhibitor user.
       final querySnapshot = await _firestore
           .collection(_collection)
           .where('userId', isEqualTo: userId)
           .get();
 
+      // Convert Firestore documents into ApplicationModel list.
       final apps = querySnapshot.docs
           .map((doc) => ApplicationModel.fromMap(doc.data(), doc.id))
           .toList();
 
+      // Sort latest applications first.
       apps.sort(_compareByUpdatedOrCreated);
+
       return apps;
     } catch (e) {
       debugPrint('Error fetching user applications: $e');
@@ -115,31 +147,38 @@ class ApplicationService {
     }
   }
 
-  /// Fetch applications for a specific organizer's exhibitions.
-  Future<List<ApplicationModel>> fetchOrganizerApplications(String organizerId) async {
+  Future<List<ApplicationModel>> fetchOrganizerApplications(
+    String organizerId,
+  ) async {
     try {
-      // 1. Fetch exhibitions managed by this organizer
+      // Fetch exhibitions managed by this organizer.
       final exhibitionsSnapshot = await _firestore
           .collection('exhibitions')
           .where('organizerId', isEqualTo: organizerId)
           .get();
 
-      final exhibitionIds = exhibitionsSnapshot.docs.map((doc) => doc.id).toList();
+      // Collect exhibition IDs owned by organizer.
+      final exhibitionIds = exhibitionsSnapshot.docs
+          .map((doc) => doc.id)
+          .toList();
 
+      // Return empty list if organizer has no exhibitions.
       if (exhibitionIds.isEmpty) return [];
 
-      // 2. Fetch applications for these exhibitions
-      // Firestore 'whereIn' is limited to 30 items, suitable for this assignment scale.
+      // Fetch applications for organizer exhibitions.
       final applicationsSnapshot = await _firestore
           .collection(_collection)
           .where('exhibitionId', whereIn: exhibitionIds)
           .get();
 
+      // Convert Firestore documents into ApplicationModel list.
       final apps = applicationsSnapshot.docs
           .map((doc) => ApplicationModel.fromMap(doc.data(), doc.id))
           .toList();
 
+      // Sort latest applications first.
       apps.sort(_compareByUpdatedOrCreated);
+
       return apps;
     } catch (e) {
       debugPrint('Error fetching organizer applications: $e');
@@ -147,18 +186,19 @@ class ApplicationService {
     }
   }
 
-  /// Fetch all applications (for Admin).
   Future<List<ApplicationModel>> fetchAllApplications() async {
     try {
-      final querySnapshot = await _firestore
-          .collection(_collection)
-          .get();
+      // Fetch all applications for admin.
+      final querySnapshot = await _firestore.collection(_collection).get();
 
+      // Convert Firestore documents into ApplicationModel list.
       final apps = querySnapshot.docs
           .map((doc) => ApplicationModel.fromMap(doc.data(), doc.id))
           .toList();
 
+      // Sort latest applications first.
       apps.sort(_compareByUpdatedOrCreated);
+
       return apps;
     } catch (e) {
       debugPrint('Error fetching all applications: $e');
@@ -166,7 +206,6 @@ class ApplicationService {
     }
   }
 
-  /// Update application status and corresponding booth spot status.
   Future<bool> updateApplicationStatus({
     required String applicationId,
     required String boothSpotId,
@@ -174,19 +213,28 @@ class ApplicationService {
     String? rejectReason,
   }) async {
     try {
+      // Use batch to update application and booth spot together.
       final batch = _firestore.batch();
 
-      // 1. Update application status
+      // Prepare application status update.
       final appRef = _firestore.collection(_collection).doc(applicationId);
+
       final Map<String, dynamic> appUpdates = {
         'status': status,
         'updatedAt': FieldValue.serverTimestamp(),
       };
-      if (rejectReason != null) appUpdates['rejectReason'] = rejectReason;
+
+      // Save reject reason when application is rejected.
+      if (rejectReason != null) {
+        appUpdates['rejectReason'] = rejectReason;
+      }
+
+      // Add application update to batch.
       batch.update(appRef, appUpdates);
 
-      // 2. Determine booth spot status
+      // Determine booth spot status based on application status.
       String spotStatus;
+
       switch (status) {
         case 'Approved':
           spotStatus = 'Booked';
@@ -199,11 +247,16 @@ class ApplicationService {
           spotStatus = 'Pending';
       }
 
-      // 3. Update booth spot
-      final spotRef = _firestore.collection(_boothSpotsCollection).doc(boothSpotId);
+      // Add booth spot status update to batch.
+      final spotRef = _firestore
+          .collection(_boothSpotsCollection)
+          .doc(boothSpotId);
+
       batch.update(spotRef, {'status': spotStatus});
 
+      // Commit both updates together.
       await batch.commit();
+
       return true;
     } catch (e) {
       debugPrint('Error updating application status: $e');
@@ -211,26 +264,32 @@ class ApplicationService {
     }
   }
 
-  /// Transition application from 'Approved' to 'Paid' and store payment metadata.
   Future<bool> makePayment({
     required String applicationId,
     required String paymentMethod,
     required String transactionId,
   }) async {
     try {
+      // Use transaction to validate status before payment.
       await _firestore.runTransaction((transaction) async {
         final appRef = _firestore.collection(_collection).doc(applicationId);
         final appDoc = await transaction.get(appRef);
 
+        // Stop if application does not exist.
         if (!appDoc.exists) {
           throw Exception('Application not found');
         }
 
+        // Payment is only allowed for approved applications.
         final currentStatus = appDoc.data()?['status'] ?? '';
+
         if (currentStatus != 'Approved') {
-          throw Exception('Only approved applications can be paid. Current status: $currentStatus');
+          throw Exception(
+            'Only approved applications can be paid. Current status: $currentStatus',
+          );
         }
 
+        // Mark application as paid and store payment details.
         transaction.update(appRef, {
           'status': 'Paid',
           'paymentMethod': paymentMethod,
@@ -239,6 +298,7 @@ class ApplicationService {
           'updatedAt': FieldValue.serverTimestamp(),
         });
       });
+
       return true;
     } catch (e) {
       debugPrint('Error making payment: $e');
@@ -246,14 +306,17 @@ class ApplicationService {
     }
   }
 
-  /// Update an existing application details.
   Future<bool> updateApplication(ApplicationModel application) async {
     try {
+      // Create updated model with latest updatedAt value.
       final updatedModel = application.copyWith(updatedAt: DateTime.now());
+
+      // Update application document in Firestore.
       await _firestore
           .collection(_collection)
           .doc(application.id)
           .update(updatedModel.toMap());
+
       return true;
     } catch (e) {
       debugPrint('Error updating application details: $e');

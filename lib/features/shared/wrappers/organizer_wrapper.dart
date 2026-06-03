@@ -14,14 +14,17 @@ class OrganizerWrapper extends StatefulWidget {
 }
 
 class OrganizerWrapperState extends State<OrganizerWrapper> {
+  // Track selected bottom navigation tab.
   int _currentIndex = 0;
 
   void setIndex(int index) {
+    // Allow other widgets to change selected tab.
     setState(() {
       _currentIndex = index;
     });
   }
 
+  // Screens available for organizer role.
   final List<Widget> _screens = [
     const OrganizerDashboardScreen(),
     const OrganizerExhibitionsScreen(),
@@ -33,6 +36,7 @@ class OrganizerWrapperState extends State<OrganizerWrapper> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // Keep tab screen states alive while switching tabs.
       body: IndexedStack(
         index: _currentIndex,
         children: _screens,

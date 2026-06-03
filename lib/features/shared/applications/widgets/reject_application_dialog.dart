@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/base_dialog.dart';
 
+// Dialog for rejecting an application.
 class RejectApplicationDialog extends StatefulWidget {
   final String title;
   final String subtitle;
@@ -15,7 +16,8 @@ class RejectApplicationDialog extends StatefulWidget {
   });
 
   @override
-  State<RejectApplicationDialog> createState() => _RejectApplicationDialogState();
+  State<RejectApplicationDialog> createState() =>
+      _RejectApplicationDialogState();
 }
 
 class _RejectApplicationDialogState extends State<RejectApplicationDialog> {
@@ -38,6 +40,7 @@ class _RejectApplicationDialogState extends State<RejectApplicationDialog> {
       secondaryLabel: 'Cancel',
       onSecondaryPressed: () => Navigator.pop(context),
       onPrimaryPressed: () {
+        // Validate reason before rejecting.
         if (_formKey.currentState!.validate()) {
           widget.onConfirm(_reasonController.text.trim());
           Navigator.pop(context);
@@ -50,6 +53,7 @@ class _RejectApplicationDialogState extends State<RejectApplicationDialog> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Show reason field label.
               const Text(
                 'Rejection Reason',
                 style: TextStyle(
@@ -59,6 +63,8 @@ class _RejectApplicationDialogState extends State<RejectApplicationDialog> {
                 ),
               ),
               const SizedBox(height: 8),
+
+              // Enter rejection reason.
               TextFormField(
                 controller: _reasonController,
                 maxLines: 3,
@@ -68,16 +74,21 @@ class _RejectApplicationDialogState extends State<RejectApplicationDialog> {
                   color: AppColors.primaryText,
                   fontWeight: FontWeight.w500,
                 ),
-                validator: (v) => v == null || v.trim().isEmpty ? 'Reason is required' : null,
+                validator: (v) =>
+                    v == null || v.trim().isEmpty ? 'Reason is required' : null,
                 decoration: InputDecoration(
-                  hintText: 'e.g. Documentation incomplete or verification details missing',
+                  hintText:
+                      'e.g. Documentation incomplete or verification details missing',
                   hintStyle: TextStyle(
                     color: Colors.grey.shade400,
                     fontSize: 14,
                   ),
                   filled: true,
                   fillColor: Colors.white,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
                     borderSide: BorderSide(

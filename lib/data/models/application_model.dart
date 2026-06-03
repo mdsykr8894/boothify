@@ -15,9 +15,13 @@ class ApplicationModel {
   final String? rejectReason;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+
+  // Payment information fields.
   final String? paymentMethod;
   final DateTime? paidAt;
   final String? transactionId;
+
+  // Exhibitor participation period.
   final DateTime? participationStartDate;
   final DateTime? participationEndDate;
 
@@ -43,8 +47,11 @@ class ApplicationModel {
     this.participationEndDate,
   });
 
-  /// Parse Firestore document data to ApplicationModel.
-  factory ApplicationModel.fromMap(Map<String, dynamic> data, String documentId) {
+  // Convert Firestore document data into ApplicationModel.
+  factory ApplicationModel.fromMap(
+    Map<String, dynamic> data,
+    String documentId,
+  ) {
     return ApplicationModel(
       id: documentId,
       userId: data['userId'] ?? '',
@@ -63,12 +70,14 @@ class ApplicationModel {
       paymentMethod: data['paymentMethod'],
       paidAt: (data['paidAt'] as Timestamp?)?.toDate(),
       transactionId: data['transactionId'],
-      participationStartDate: (data['participationStartDate'] as Timestamp?)?.toDate(),
-      participationEndDate: (data['participationEndDate'] as Timestamp?)?.toDate(),
+      participationStartDate:
+          (data['participationStartDate'] as Timestamp?)?.toDate(),
+      participationEndDate:
+          (data['participationEndDate'] as Timestamp?)?.toDate(),
     );
   }
 
-  /// Convert ApplicationModel to Firestore-friendly map.
+  // Convert ApplicationModel into Firestore-friendly map.
   Map<String, dynamic> toMap() {
     return {
       'userId': userId,
@@ -82,17 +91,25 @@ class ApplicationModel {
       'requirements': requirements,
       'status': status,
       'rejectReason': rejectReason,
-      'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : FieldValue.serverTimestamp(),
-      'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : FieldValue.serverTimestamp(),
+      'createdAt': createdAt != null
+          ? Timestamp.fromDate(createdAt!)
+          : FieldValue.serverTimestamp(),
+      'updatedAt': updatedAt != null
+          ? Timestamp.fromDate(updatedAt!)
+          : FieldValue.serverTimestamp(),
       'paymentMethod': paymentMethod,
       'paidAt': paidAt != null ? Timestamp.fromDate(paidAt!) : null,
       'transactionId': transactionId,
-      'participationStartDate': participationStartDate != null ? Timestamp.fromDate(participationStartDate!) : null,
-      'participationEndDate': participationEndDate != null ? Timestamp.fromDate(participationEndDate!) : null,
+      'participationStartDate': participationStartDate != null
+          ? Timestamp.fromDate(participationStartDate!)
+          : null,
+      'participationEndDate': participationEndDate != null
+          ? Timestamp.fromDate(participationEndDate!)
+          : null,
     };
   }
 
-  /// Create a copy of ApplicationModel with updated fields.
+  // Create a new ApplicationModel with updated values.
   ApplicationModel copyWith({
     String? userId,
     String? exhibitionId,
@@ -131,8 +148,10 @@ class ApplicationModel {
       paymentMethod: paymentMethod ?? this.paymentMethod,
       paidAt: paidAt ?? this.paidAt,
       transactionId: transactionId ?? this.transactionId,
-      participationStartDate: participationStartDate ?? this.participationStartDate,
-      participationEndDate: participationEndDate ?? this.participationEndDate,
+      participationStartDate:
+          participationStartDate ?? this.participationStartDate,
+      participationEndDate:
+          participationEndDate ?? this.participationEndDate,
     );
   }
 }

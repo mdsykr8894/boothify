@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../constants/app_radius.dart';
 
+// Shared snackbar feedback helper.
 class FeedbackHelper {
+  // Show success feedback.
   static void showSuccess(
     BuildContext context,
     String message,
@@ -14,6 +16,7 @@ class FeedbackHelper {
     );
   }
 
+  // Show error feedback.
   static void showError(
     BuildContext context,
     String message,
@@ -26,6 +29,7 @@ class FeedbackHelper {
     );
   }
 
+  // Show warning feedback.
   static void showWarning(
     BuildContext context,
     String message,
@@ -38,6 +42,7 @@ class FeedbackHelper {
     );
   }
 
+  // Show info feedback.
   static void showInfo(
     BuildContext context,
     String message,
@@ -50,6 +55,7 @@ class FeedbackHelper {
     );
   }
 
+  // Build shared snackbar layout.
   static void _showSnackBar(
     BuildContext context, {
     required String message,
@@ -57,27 +63,32 @@ class FeedbackHelper {
     required Color iconColor,
   }) {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    // Remove existing snackbar before showing a new one.
     scaffoldMessenger.clearSnackBars();
 
     scaffoldMessenger.showSnackBar(
       SnackBar(
         behavior: SnackBarBehavior.floating,
-        backgroundColor: const Color(0xFF202225), // Elegant dark slate
+        backgroundColor: const Color(0xFF202225),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.m),
         ),
-        margin: const EdgeInsets.fromLTRB(16, 16, 16, 28), // Premium bottom margin
+        margin: const EdgeInsets.fromLTRB(16, 16, 16, 28),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         duration: const Duration(seconds: 3),
         dismissDirection: DismissDirection.horizontal,
         content: Row(
           children: [
+            // Show feedback icon.
             Icon(
               icon,
               color: iconColor,
               size: 20,
             ),
             const SizedBox(width: 12),
+
+            // Show feedback message.
             Expanded(
               child: Text(
                 message,

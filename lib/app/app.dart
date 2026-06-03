@@ -27,13 +27,18 @@ class _BoothifyAppState extends State<BoothifyApp> {
   @override
   void initState() {
     super.initState();
+
+    // Create auth provider and load current user.
     _authProvider = AuthProvider()..loadCurrentUser();
+
+    // Create router with auth redirect support.
     _router = AppRouter.createRouter(_authProvider);
   }
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
+      // Register providers used across the app.
       providers: [
         ChangeNotifierProvider.value(value: _authProvider),
         ChangeNotifierProvider(create: (_) => ExhibitionProvider()),
@@ -44,7 +49,7 @@ class _BoothifyAppState extends State<BoothifyApp> {
       ],
       child: Consumer<AuthProvider>(
         builder: (context, auth, child) {
-          // Remove native splash screen once auth state is initialized
+          // Remove splash screen after auth initialization.
           if (auth.isInitialized) {
             FlutterNativeSplash.remove();
           }
@@ -52,13 +57,20 @@ class _BoothifyAppState extends State<BoothifyApp> {
           return MaterialApp.router(
             title: 'Boothify',
             debugShowCheckedModeBanner: false,
+
+            // Apply global app theme.
             theme: AppTheme.light,
+
+            // Use GoRouter for app navigation.
             routerConfig: _router,
+
+            // Disable overscroll effect.
             scrollBehavior: const MaterialScrollBehavior().copyWith(
               overscroll: false,
             ),
             builder: (context, child) {
               return AnnotatedRegion<SystemUiOverlayStyle>(
+                // Match system UI colors with app design.
                 value: const SystemUiOverlayStyle(
                   statusBarColor: Colors.transparent,
                   statusBarIconBrightness: Brightness.dark,
@@ -75,5 +87,3 @@ class _BoothifyAppState extends State<BoothifyApp> {
     );
   }
 }
-
-

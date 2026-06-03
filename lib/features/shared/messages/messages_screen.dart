@@ -9,6 +9,7 @@ import '../../../core/widgets/app_page_header.dart';
 import '../../../core/widgets/login_required_view.dart';
 import '../../../providers/auth_provider.dart';
 
+// Display user messages.
 class MessagesScreen extends StatefulWidget {
   const MessagesScreen({super.key});
 
@@ -17,6 +18,7 @@ class MessagesScreen extends StatefulWidget {
 }
 
 class _MessagesScreenState extends State<MessagesScreen> {
+  // Track selected message filter.
   String _selectedFilter = 'All';
 
   @override
@@ -24,6 +26,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
     final authProvider = context.watch<AuthProvider>();
     final user = authProvider.currentUser;
 
+    // Require login before viewing messages.
     if (user == null) {
       return Scaffold(
         body: SafeArea(
@@ -49,16 +52,21 @@ class _MessagesScreenState extends State<MessagesScreen> {
           children: [
             const AppPageHeader(title: 'Messages'),
             const SizedBox(height: AppSpacing.s),
+
+            // Filter messages by status.
             AppFilterChips(
               selectedValue: _selectedFilter,
               filters: const ['All', 'Read', 'Unread'],
               onChanged: (val) => setState(() => _selectedFilter = val),
             ),
             const SizedBox(height: AppSpacing.s),
+
+            // Show empty messages state.
             const Expanded(
               child: AppEmptyState(
                 title: 'No Messages',
-                message: 'Your conversations will appear here when messages are available.',
+                message:
+                    'Your conversations will appear here when messages are available.',
                 icon: Icons.chat_bubble_outline,
               ),
             ),

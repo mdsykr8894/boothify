@@ -3,6 +3,7 @@ import '../constants/app_colors.dart';
 import '../constants/app_spacing.dart';
 import 'app_button.dart';
 
+// Reusable login required message.
 class LoginRequiredView extends StatelessWidget {
   final String title;
   final String message;
@@ -24,7 +25,9 @@ class LoginRequiredView extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.screenHorizontal,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -50,6 +53,8 @@ class LoginRequiredView extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 38),
+
+            // Send user to login flow.
             AppButton(
               text: buttonText,
               width: 170,

@@ -9,6 +9,8 @@ class UserModel {
   final String? companyName;
   final List<String> favoriteExhibitionIds;
   final DateTime? createdAt;
+
+  // Optional personal profile fields.
   final String? preferredName;
   final String? phoneNumber;
   final String? residentialAddress;
@@ -18,7 +20,7 @@ class UserModel {
   final bool isVerified;
   final DateTime? updatedAt;
 
-  // New optional Exhibitor/Company fields
+  // Optional exhibitor/company profile fields.
   final String? businessType;
   final String? companyRegistration;
   final String? productCategory;
@@ -26,7 +28,7 @@ class UserModel {
   final String? companyPhone;
   final String? companyEmail;
 
-  // New optional Organizer fields
+  // Optional organizer profile fields.
   final String? organizationName;
   final String? organizerPhone;
   final String? organizerEmail;
@@ -61,7 +63,7 @@ class UserModel {
     this.organizerVerificationStatus,
   });
 
-  /// Parse Firestore document data to UserModel.
+  // Convert Firestore document data into UserModel.
   factory UserModel.fromMap(Map<String, dynamic> data, String documentId) {
     return UserModel(
       uid: documentId,
@@ -70,18 +72,30 @@ class UserModel {
       role: data['role'] ?? 'Exhibitor',
       isActive: data['isActive'] ?? true,
       companyName: data['companyName'],
-      favoriteExhibitionIds: List<String>.from(data['favoriteExhibitionIds'] ?? []),
+      favoriteExhibitionIds: List<String>.from(
+        data['favoriteExhibitionIds'] ?? [],
+      ),
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
       preferredName: data['preferredName'],
-      phoneNumber: data['phoneNumber'] ?? data['phone'], // Support fallback to simple phone field
+
+      // Support old phone field if phoneNumber is not available.
+      phoneNumber: data['phoneNumber'] ?? data['phone'],
+
       residentialAddress: data['residentialAddress'],
       postalAddress: data['postalAddress'],
       emergencyContact: data['emergencyContact'],
       contactEmail: data['contactEmail'],
-      isVerified: data['isVerified'] ?? (data['verificationStatus'] == 'Verified') ?? false,
+
+      // Support both boolean isVerified and text verificationStatus.
+      isVerified: data['isVerified'] ?? (data['verificationStatus'] == 'Verified'),
+
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate(),
       businessType: data['businessType'],
-      companyRegistration: data['companyRegistration'] ?? data['registrationNumber'],
+
+      // Support old registrationNumber field if companyRegistration is missing.
+      companyRegistration:
+          data['companyRegistration'] ?? data['registrationNumber'],
+
       productCategory: data['productCategory'],
       contactPerson: data['contactPerson'],
       companyPhone: data['companyPhone'],
@@ -93,7 +107,7 @@ class UserModel {
     );
   }
 
-  /// Convert UserModel to Firestore-friendly map.
+  // Convert UserModel into Firestore-friendly map.
   Map<String, dynamic> toMap() {
     return {
       'name': name,
@@ -102,7 +116,9 @@ class UserModel {
       'isActive': isActive,
       'companyName': companyName,
       'favoriteExhibitionIds': favoriteExhibitionIds,
-      'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : FieldValue.serverTimestamp(),
+      'createdAt': createdAt != null
+          ? Timestamp.fromDate(createdAt!)
+          : FieldValue.serverTimestamp(),
       'preferredName': preferredName,
       'phoneNumber': phoneNumber,
       'residentialAddress': residentialAddress,
@@ -110,7 +126,9 @@ class UserModel {
       'emergencyContact': emergencyContact,
       'contactEmail': contactEmail,
       'isVerified': isVerified,
-      'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : FieldValue.serverTimestamp(),
+      'updatedAt': updatedAt != null
+          ? Timestamp.fromDate(updatedAt!)
+          : FieldValue.serverTimestamp(),
       'businessType': businessType,
       'companyRegistration': companyRegistration,
       'productCategory': productCategory,
@@ -124,7 +142,7 @@ class UserModel {
     };
   }
 
-  /// Create a copy of UserModel with updated fields.
+  // Create a new UserModel with updated values.
   UserModel copyWith({
     String? name,
     String? email,
@@ -178,7 +196,8 @@ class UserModel {
       organizationName: organizationName ?? this.organizationName,
       organizerPhone: organizerPhone ?? this.organizerPhone,
       organizerEmail: organizerEmail ?? this.organizerEmail,
-      organizerVerificationStatus: organizerVerificationStatus ?? this.organizerVerificationStatus,
+      organizerVerificationStatus:
+          organizerVerificationStatus ?? this.organizerVerificationStatus,
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 
+// Reusable loading indicator.
 class AppLoading extends StatelessWidget {
   const AppLoading({super.key});
 

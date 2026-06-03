@@ -18,20 +18,29 @@ import '../../../core/utils/feedback_helper.dart';
 class ExhibitionDetailsScreen extends StatefulWidget {
   final ExhibitionModel exhibition;
 
-  const ExhibitionDetailsScreen({super.key, required this.exhibition});
+  const ExhibitionDetailsScreen({
+    super.key,
+    required this.exhibition,
+  });
 
   @override
-  State<ExhibitionDetailsScreen> createState() => _ExhibitionDetailsScreenState();
+  State<ExhibitionDetailsScreen> createState() =>
+      _ExhibitionDetailsScreenState();
 }
 
 class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
+  // Track scroll position for sticky app bar opacity.
   late final ScrollController _scrollController;
   double _scrollOffset = 0.0;
 
   @override
   void initState() {
     super.initState();
+
+    // Create scroll controller for this page.
     _scrollController = ScrollController();
+
+    // Update scroll offset when user scrolls.
     _scrollController.addListener(() {
       if (_scrollController.hasClients) {
         setState(() {
@@ -39,6 +48,8 @@ class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
         });
       }
     });
+
+    // Fetch booth spots and packages after screen loads.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<BoothSpotProvider>().fetchBoothSpots(widget.exhibition.id);
       context.read<BoothProvider>().fetchBoothPackages(widget.exhibition.id);
@@ -47,11 +58,13 @@ class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
 
   @override
   void dispose() {
+    // Dispose scroll controller to prevent memory leaks.
     _scrollController.dispose();
     super.dispose();
   }
 
   Widget _buildStatusBadge(String status) {
+    // Build colored badge based on status value.
     Color textColor;
     Color bgColor;
     Color borderColor;
@@ -111,6 +124,7 @@ class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
   }
 
   Widget _buildCategoryBadge(String category) {
+    // Build category badge for exhibition category.
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
@@ -134,6 +148,7 @@ class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
   }
 
   Widget _buildPinkPlaceholderIcon() {
+    // Show placeholder when exhibition image is missing.
     return Center(
       child: Icon(
         Icons.store_mall_directory_outlined,
@@ -143,10 +158,16 @@ class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
     );
   }
 
-  Widget _buildQuickInfoRow(String label, String value, {bool isLast = false}) {
+  Widget _buildQuickInfoRow(
+    String label,
+    String value, {
+    bool isLast = false,
+  }) {
+    // Hide quick info row if value is empty.
     if (value.trim().isEmpty || value.toLowerCase() == 'null') {
       return const SizedBox.shrink();
     }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -175,22 +196,27 @@ class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
             ],
           ),
         ),
-        if (!isLast)
-          Divider(height: 1, color: Colors.grey.shade100),
+        if (!isLast) Divider(height: 1, color: Colors.grey.shade100),
       ],
     );
   }
 
-
-
-  Widget _buildInfoCard({required IconData icon, required String label, required String value}) {
+  Widget _buildInfoCard({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    // Build small information card for duration and location.
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primaryAccent.withValues(alpha: 0.15), width: 1.0),
+        border: Border.all(
+          color: AppColors.primaryAccent.withValues(alpha: 0.15),
+          width: 1.0,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -234,9 +260,12 @@ class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
     );
   }
 
-
-
-  Widget _buildSummaryItem(String label, String value, {Color? highlightColor}) {
+  Widget _buildSummaryItem(
+    String label,
+    String value, {
+    Color? highlightColor,
+  }) {
+    // Build one summary item for booth statistics.
     return Expanded(
       child: Column(
         children: [
@@ -263,6 +292,7 @@ class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
   }
 
   Widget _buildVerticalDivider() {
+    // Build divider between summary items.
     return Container(
       width: 1,
       height: 28,
@@ -270,7 +300,12 @@ class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
     );
   }
 
-  Widget _buildPublicPackageItem(BoothModel package, bool isLast, {bool isCheapest = false}) {
+  Widget _buildPublicPackageItem(
+    BoothModel package,
+    bool isLast, {
+    bool isCheapest = false,
+  }) {
+    // Build booth package card for public view.
     return Container(
       width: double.infinity,
       margin: EdgeInsets.only(bottom: isLast ? 0 : AppSpacing.m),
@@ -278,14 +313,14 @@ class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isCheapest 
+          color: isCheapest
               ? AppColors.primaryAccent.withValues(alpha: 0.25)
-              : AppColors.border, 
+              : AppColors.border,
           width: isCheapest ? 1.2 : 1.0,
         ),
         boxShadow: [
           BoxShadow(
-            color: isCheapest 
+            color: isCheapest
                 ? AppColors.primaryAccent.withValues(alpha: 0.02)
                 : Colors.black.withValues(alpha: 0.04),
             blurRadius: 16,
@@ -312,7 +347,10 @@ class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
               ),
               if (isCheapest)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFF0F3),
                     borderRadius: BorderRadius.circular(6),
@@ -401,26 +439,33 @@ class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
     );
   }
 
-
-
   @override
   Widget build(BuildContext context) {
+    // Get current user and related providers.
     final authProvider = context.watch<AuthProvider>();
     final userProvider = context.watch<UserProvider>();
     final spotProvider = context.watch<BoothSpotProvider>();
     final boothProvider = context.watch<BoothProvider>();
+
+    // Calculate sticky app bar opacity from scroll offset.
     final double appBarOpacity = (_scrollOffset / 150.0).clamp(0.0, 1.0);
 
     final user = authProvider.currentUser;
-    final bool isFavorited = user?.favoriteExhibitionIds.contains(widget.exhibition.id) ?? false;
-    
 
-    // Dynamic creator display name resolving pattern matching organizer dashboard
-    final creator = userProvider.users.any((u) => u.uid == widget.exhibition.organizerId)
-        ? userProvider.users.firstWhere((u) => u.uid == widget.exhibition.organizerId)
-        : null;
+    // Check whether user already saved this exhibition.
+    final bool isFavorited =
+        user?.favoriteExhibitionIds.contains(widget.exhibition.id) ?? false;
+
+    // Resolve organizer display name from user list.
+    final creator =
+        userProvider.users.any((u) => u.uid == widget.exhibition.organizerId)
+            ? userProvider.users.firstWhere(
+                (u) => u.uid == widget.exhibition.organizerId,
+              )
+            : null;
 
     String creatorDisplay = 'Organizer';
+
     if (creator != null) {
       if (creator.name.isNotEmpty) {
         creatorDisplay = creator.name;
@@ -430,9 +475,11 @@ class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
         creatorDisplay = 'Admin';
       }
     } else {
-      // Safely check current user if they are the creator (e.g., Exhibitor viewing own event)
+      // Fallback to current user if they created the exhibition.
       final currentUser = authProvider.currentUser;
-      if (currentUser != null && currentUser.uid == widget.exhibition.organizerId) {
+
+      if (currentUser != null &&
+          currentUser.uid == widget.exhibition.organizerId) {
         if (currentUser.name.isNotEmpty) {
           creatorDisplay = currentUser.name;
         } else if (currentUser.email.isNotEmpty) {
@@ -443,25 +490,26 @@ class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
       }
     }
 
-    // Spot Counts Calculations
+    // Calculate booth spot summary.
     final spots = spotProvider.boothSpots;
     final totalSpots = spots.length;
     final availableSpots = spotProvider.availableSpots.length;
 
-    // Packages list
+    // Get booth packages for this exhibition.
     final packages = boothProvider.boothPackages;
 
-    // Minimum package price calculation
+    // Find minimum booth package price.
     double? minPrice;
     if (packages.isNotEmpty) {
       minPrice = packages.map((p) => p.price).reduce((a, b) => a < b ? a : b);
     }
 
+    // Find cheapest booth package.
     final cheapestPackage = packages.isNotEmpty
         ? packages.reduce((a, b) => a.price < b.price ? a : b)
         : null;
 
-    // Quick info dynamic check
+    // Show quick info only when at least one value exists.
     final hasQuickInfo = widget.exhibition.eventType.isNotEmpty ||
         widget.exhibition.category.isNotEmpty ||
         widget.exhibition.openingHours.isNotEmpty ||
@@ -473,7 +521,7 @@ class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // Background Hero Image / Placeholder (Premium full size 380px)
+          // Hero image or placeholder.
           Positioned(
             top: 0,
             left: 0,
@@ -494,9 +542,7 @@ class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
                   ),
           ),
 
-
-
-          // Scrollable overlapping panel
+          // Scrollable details panel.
           Positioned.fill(
             child: ScrollConfiguration(
               behavior: ScrollConfiguration.of(context).copyWith(
@@ -507,251 +553,318 @@ class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
                 physics: const ClampingScrollPhysics(),
                 child: Column(
                   children: [
-                    const SizedBox(height: 350), // Spacing to show 380px hero background (30px overlapping margin)
-                  Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(38)),
-                      border: Border.all(color: Colors.grey.shade200, width: 1.0),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 16,
-                          offset: const Offset(0, -4),
+                    const SizedBox(height: 350),
+                    Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(38),
                         ),
-                      ],
-                    ),
-                    padding: const EdgeInsets.only(left: 24, right: 24, top: 16, bottom: 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 8), // Title moved slightly upward (tighter)
+                        border: Border.all(
+                          color: Colors.grey.shade200,
+                          width: 1.0,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 16,
+                            offset: const Offset(0, -4),
+                          ),
+                        ],
+                      ),
+                      padding: const EdgeInsets.only(
+                        left: 24,
+                        right: 24,
+                        top: 16,
+                        bottom: 8,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 8),
 
-                        // Exhibition Event Title (Centered)
-                        Center(
-                          child: Text(
-                            widget.exhibition.name,
-                            textAlign: TextAlign.center,
-                            style: AppTextStyles.h1.copyWith(
-                              fontSize: 34,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -1.0,
-                              height: 1.2,
+                          // Exhibition title.
+                          Center(
+                            child: Text(
+                              widget.exhibition.name,
+                              textAlign: TextAlign.center,
+                              style: AppTextStyles.h1.copyWith(
+                                fontSize: 34,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -1.0,
+                                height: 1.2,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 10), // title to metadata: 10-12px
+                          const SizedBox(height: 10),
 
-                        // Metadata Row (Location · Date range - Centered)
-                        Center(
-                          child: Text(
-                            '${widget.exhibition.location}  ·  ${DateFormatHelper.formatDateRange(widget.exhibition.startDate, widget.exhibition.endDate)}',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: AppColors.secondaryText,
-                              fontWeight: FontWeight.w500,
-                              letterSpacing: -0.1,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12), // metadata to badges: 10-12px
-
-                        // Badges Row (Centered)
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            _buildCategoryBadge(widget.exhibition.category),
-                            const SizedBox(width: 8),
-                            _buildStatusBadge(widget.exhibition.eventStatus),
-                            const SizedBox(width: 8),
-                            _buildStatusBadge(widget.exhibition.isBookingOpen ? 'Booking Open' : 'Booking Closed'),
-                          ],
-                        ),
-                        const SizedBox(height: 20), // badges to divider/stats row: 16-20px
-                        const Divider(height: 1, color: AppColors.border),
-                        const SizedBox(height: AppSpacing.l),
-
-                        // Horizontal Minimalist Key Summary Row (Airbnb Review row inspired)
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            _buildSummaryItem('Total Booths', totalSpots.toString()),
-                            _buildVerticalDivider(),
-                            _buildSummaryItem('Available', availableSpots.toString(), highlightColor: AppColors.success),
-                            _buildVerticalDivider(),
-                            _buildSummaryItem('Packages', packages.length.toString()),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        const Divider(height: 1, color: AppColors.border),
-                        const SizedBox(height: 18),
-
-                        // Organized by Row
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              const Icon(
-                                Icons.person_outline,
-                                size: 26,
+                          // Location and date range.
+                          Center(
+                            child: Text(
+                              '${widget.exhibition.location}  ·  ${DateFormatHelper.formatDateRange(widget.exhibition.startDate, widget.exhibition.endDate)}',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 14,
                                 color: AppColors.secondaryText,
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: -0.1,
                               ),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: Text.rich(
-                                  TextSpan(
-                                    text: 'Organized by ',
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      color: AppColors.secondaryText,
-                                      fontWeight: FontWeight.w400,
-                                    ),
-                                    children: [
-                                      TextSpan(
-                                        text: creatorDisplay,
-                                        style: const TextStyle(
-                                          color: AppColors.primaryText,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
-                        ),
+                          const SizedBox(height: 12),
 
-                        const SizedBox(height: 18),
-                        const Divider(height: 1, color: AppColors.border),
-                        const SizedBox(height: 20),
-
-                        // Duration and Location Premium Cards
-                        IntrinsicHeight(
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                          // Category, event status, and booking status badges.
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Expanded(
-                                child: _buildInfoCard(
-                                  icon: Icons.calendar_today_outlined,
-                                  label: 'Duration',
-                                  value: DateFormatHelper.formatDateRange(widget.exhibition.startDate, widget.exhibition.endDate),
-                                ),
+                              _buildCategoryBadge(widget.exhibition.category),
+                              const SizedBox(width: 8),
+                              _buildStatusBadge(
+                                widget.exhibition.eventStatus,
                               ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: _buildInfoCard(
-                                  icon: Icons.location_on_outlined,
-                                  label: 'Location',
-                                  value: widget.exhibition.location,
-                                ),
+                              const SizedBox(width: 8),
+                              _buildStatusBadge(
+                                widget.exhibition.isBookingOpen
+                                    ? 'Booking Open'
+                                    : 'Booking Closed',
                               ),
                             ],
                           ),
-                        ),
-                        const SizedBox(height: AppSpacing.xl),
-                        const Divider(height: 1, color: AppColors.border),
-                        const SizedBox(height: AppSpacing.xl),
-
-                        // Booth Packages Section ("What this place offers" style)
-                        const Text('Booth Package', style: AppTextStyles.h2),
-                        const SizedBox(height: AppSpacing.m),
-                        boothProvider.isLoading 
-                            ? const Center(child: Padding(
-                                padding: EdgeInsets.all(16.0),
-                                child: CircularProgressIndicator(),
-                              ))
-                            : packages.isEmpty 
-                                ? Text(
-                                    'No booth packages available.',
-                                    style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
-                                  )
-                                : Column(
-                                    children: List.generate(
-                                      packages.length,
-                                      (idx) {
-                                        final pkg = packages[idx];
-                                        final isCheapest = cheapestPackage != null && pkg.id == cheapestPackage.id;
-                                        return _buildPublicPackageItem(
-                                          pkg,
-                                          idx == packages.length - 1,
-                                          isCheapest: isCheapest,
-                                        );
-                                      },
-                                    ),
-                                  ),
-                        const SizedBox(height: AppSpacing.xl),
-                        const Divider(height: 1, color: AppColors.border),
-                        const SizedBox(height: AppSpacing.xl),
-
-                        // About Section Description
-                        const Text('About this exhibition', style: AppTextStyles.h2),
-                        const SizedBox(height: AppSpacing.m),
-                        Text(
-                          widget.exhibition.description,
-                          style: const TextStyle(
-                            fontSize: 14.5,
-                            color: AppColors.secondaryText,
-                            height: 1.6,
-                          ),
-                        ),
-
-                        // Quick Info Details
-                        if (hasQuickInfo) ...[
-                          const SizedBox(height: AppSpacing.xl),
+                          const SizedBox(height: 20),
                           const Divider(height: 1, color: AppColors.border),
                           const SizedBox(height: AppSpacing.l),
-                          const Text('Quick Info', style: AppTextStyles.h2),
+
+                          // Booth summary row.
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              _buildSummaryItem(
+                                'Total Booths',
+                                totalSpots.toString(),
+                              ),
+                              _buildVerticalDivider(),
+                              _buildSummaryItem(
+                                'Available',
+                                availableSpots.toString(),
+                                highlightColor: AppColors.success,
+                              ),
+                              _buildVerticalDivider(),
+                              _buildSummaryItem(
+                                'Packages',
+                                packages.length.toString(),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          const Divider(height: 1, color: AppColors.border),
+                          const SizedBox(height: 18),
+
+                          // Organizer display row.
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.person_outline,
+                                  size: 26,
+                                  color: AppColors.secondaryText,
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Text.rich(
+                                    TextSpan(
+                                      text: 'Organized by ',
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: AppColors.secondaryText,
+                                        fontWeight: FontWeight.w400,
+                                      ),
+                                      children: [
+                                        TextSpan(
+                                          text: creatorDisplay,
+                                          style: const TextStyle(
+                                            color: AppColors.primaryText,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          const Divider(height: 1, color: AppColors.border),
+                          const SizedBox(height: 20),
+
+                          // Duration and location cards.
+                          IntrinsicHeight(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Expanded(
+                                  child: _buildInfoCard(
+                                    icon: Icons.calendar_today_outlined,
+                                    label: 'Duration',
+                                    value: DateFormatHelper.formatDateRange(
+                                      widget.exhibition.startDate,
+                                      widget.exhibition.endDate,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: _buildInfoCard(
+                                    icon: Icons.location_on_outlined,
+                                    label: 'Location',
+                                    value: widget.exhibition.location,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.xl),
+                          const Divider(height: 1, color: AppColors.border),
+                          const SizedBox(height: AppSpacing.xl),
+
+                          // Booth package section.
+                          const Text(
+                            'Booth Package',
+                            style: AppTextStyles.h2,
+                          ),
                           const SizedBox(height: AppSpacing.m),
-                          _buildQuickInfoRow('Event Type', widget.exhibition.eventType, isLast: false),
-                          _buildQuickInfoRow('Category', widget.exhibition.category, isLast: false),
-                          _buildQuickInfoRow('Opening Hours', widget.exhibition.openingHours, isLast: false),
-                          _buildQuickInfoRow('Expected Visitors', widget.exhibition.expectedVisitors, isLast: false),
-                          _buildQuickInfoRow('Contact Email', widget.exhibition.contactEmail, isLast: false),
-                          _buildQuickInfoRow('Contact Phone', widget.exhibition.contactPhone, isLast: true),
-                        ],
+                          boothProvider.isLoading
+                              ? const Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.all(16.0),
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                )
+                              : packages.isEmpty
+                                  ? Text(
+                                      'No booth packages available.',
+                                      style: TextStyle(
+                                        color: Colors.grey.shade500,
+                                        fontSize: 14,
+                                      ),
+                                    )
+                                  : Column(
+                                      children: List.generate(
+                                        packages.length,
+                                        (idx) {
+                                          final pkg = packages[idx];
+                                          final isCheapest =
+                                              cheapestPackage != null &&
+                                                  pkg.id == cheapestPackage.id;
 
-                        // Admin Context Section (Admin Only)
-                        if (user?.role == 'Admin') ...[
-                          _buildAdminContextSection(),
-                        ],
+                                          return _buildPublicPackageItem(
+                                            pkg,
+                                            idx == packages.length - 1,
+                                            isCheapest: isCheapest,
+                                          );
+                                        },
+                                      ),
+                                    ),
+                          const SizedBox(height: AppSpacing.xl),
+                          const Divider(height: 1, color: AppColors.border),
+                          const SizedBox(height: AppSpacing.xl),
 
-                        const SizedBox(height: 150), // Safe scroll space so content is never covered by bottomSheet
-                      ],
+                          // Exhibition description.
+                          const Text(
+                            'About this exhibition',
+                            style: AppTextStyles.h2,
+                          ),
+                          const SizedBox(height: AppSpacing.m),
+                          Text(
+                            widget.exhibition.description,
+                            style: const TextStyle(
+                              fontSize: 14.5,
+                              color: AppColors.secondaryText,
+                              height: 1.6,
+                            ),
+                          ),
+
+                          // Quick info section.
+                          if (hasQuickInfo) ...[
+                            const SizedBox(height: AppSpacing.xl),
+                            const Divider(
+                              height: 1,
+                              color: AppColors.border,
+                            ),
+                            const SizedBox(height: AppSpacing.l),
+                            const Text(
+                              'Quick Info',
+                              style: AppTextStyles.h2,
+                            ),
+                            const SizedBox(height: AppSpacing.m),
+                            _buildQuickInfoRow(
+                              'Event Type',
+                              widget.exhibition.eventType,
+                            ),
+                            _buildQuickInfoRow(
+                              'Category',
+                              widget.exhibition.category,
+                            ),
+                            _buildQuickInfoRow(
+                              'Opening Hours',
+                              widget.exhibition.openingHours,
+                            ),
+                            _buildQuickInfoRow(
+                              'Expected Visitors',
+                              widget.exhibition.expectedVisitors,
+                            ),
+                            _buildQuickInfoRow(
+                              'Contact Email',
+                              widget.exhibition.contactEmail,
+                            ),
+                            _buildQuickInfoRow(
+                              'Contact Phone',
+                              widget.exhibition.contactPhone,
+                              isLast: true,
+                            ),
+                          ],
+
+                          // Admin-only technical context.
+                          if (user?.role == 'Admin') ...[
+                            _buildAdminContextSection(),
+                          ],
+
+                          const SizedBox(height: 150),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
-        ),
 
-          // Floating Circular Back & Favorite Buttons (Notch-safe, rendered on top of scrollable layer to allow taps)
-          // Scroll-aware Sticky Top App Bar
-          // Scroll-aware Sticky Top App Bar
+          // Sticky top bar with navigation actions.
           Positioned(
             top: 0,
             left: 0,
             right: 0,
             child: Container(
-              // Match Profile screen header rhythm: SafeArea + 12px vertical padding + 48px height content
               height: MediaQuery.of(context).padding.top + 72,
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: appBarOpacity),
                 border: Border(
                   bottom: BorderSide(
-                    color: Colors.grey.shade200.withValues(alpha: appBarOpacity),
+                    color:
+                        Colors.grey.shade200.withValues(alpha: appBarOpacity),
                     width: 1,
                   ),
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: appBarOpacity * 0.03),
+                    color: Colors.black.withValues(
+                      alpha: appBarOpacity * 0.03,
+                    ),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -770,7 +883,7 @@ class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        // Left: Back button (aligned perfectly to left margin)
+                        // Back button.
                         GestureDetector(
                           onTap: () => context.pop(),
                           child: Container(
@@ -781,7 +894,9 @@ class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.08 * (1.0 - appBarOpacity)),
+                                  color: Colors.black.withValues(
+                                    alpha: 0.08 * (1.0 - appBarOpacity),
+                                  ),
                                   blurRadius: 10,
                                   offset: const Offset(0, 4),
                                 ),
@@ -794,13 +909,17 @@ class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
                             ),
                           ),
                         ),
-                        // Right: Share and Favorite buttons (aligned perfectly to right margin)
+
+                        // Share and favorite buttons.
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             GestureDetector(
                               onTap: () {
-                                FeedbackHelper.showInfo(context, 'Sharing options coming soon!');
+                                FeedbackHelper.showInfo(
+                                  context,
+                                  'Sharing options coming soon!',
+                                );
                               },
                               child: Container(
                                 width: 40,
@@ -810,7 +929,9 @@ class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.08 * (1.0 - appBarOpacity)),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.08 * (1.0 - appBarOpacity),
+                                      ),
                                       blurRadius: 10,
                                       offset: const Offset(0, 4),
                                     ),
@@ -826,20 +947,30 @@ class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
                             const SizedBox(width: 12),
                             GestureDetector(
                               onTap: () async {
+                                // Ask guest user to login before saving favorite.
                                 if (user == null) {
-                                  FeedbackHelper.showWarning(context, 'Please log in to save favorites');
+                                  FeedbackHelper.showWarning(
+                                    context,
+                                    'Please log in to save favorites',
+                                  );
                                   context.push(AppRoutes.login);
                                   return;
                                 }
 
-                                final updatedFavorites = await userProvider.toggleFavorite(
+                                // Toggle favorite in Firestore through UserProvider.
+                                final updatedFavorites =
+                                    await userProvider.toggleFavorite(
                                   userId: user.uid,
                                   exhibitionId: widget.exhibition.id,
-                                  currentFavorites: user.favoriteExhibitionIds,
+                                  currentFavorites:
+                                      user.favoriteExhibitionIds,
                                 );
 
+                                // Update local auth user state after favorite change.
                                 if (updatedFavorites != null) {
-                                  authProvider.updateFavorites(updatedFavorites);
+                                  authProvider.updateFavorites(
+                                    updatedFavorites,
+                                  );
                                 }
                               },
                               child: Container(
@@ -850,15 +981,21 @@ class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.08 * (1.0 - appBarOpacity)),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.08 * (1.0 - appBarOpacity),
+                                      ),
                                       blurRadius: 10,
                                       offset: const Offset(0, 4),
                                     ),
                                   ],
                                 ),
                                 child: Icon(
-                                  isFavorited ? Icons.favorite : Icons.favorite_border,
-                                  color: isFavorited ? AppColors.primaryAccent : Colors.grey.shade600,
+                                  isFavorited
+                                      ? Icons.favorite
+                                      : Icons.favorite_border,
+                                  color: isFavorited
+                                      ? AppColors.primaryAccent
+                                      : Colors.grey.shade600,
                                   size: 20,
                                 ),
                               ),
@@ -874,6 +1011,8 @@ class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
           ),
         ],
       ),
+
+      // Bottom booking bar.
       bottomSheet: Container(
         padding: EdgeInsets.only(
           left: 24,
@@ -883,7 +1022,12 @@ class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
         ),
         decoration: BoxDecoration(
           color: Colors.white,
-          border: Border(top: BorderSide(color: Colors.grey.shade200, width: 1)),
+          border: Border(
+            top: BorderSide(
+              color: Colors.grey.shade200,
+              width: 1,
+            ),
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.03),
@@ -963,7 +1107,10 @@ class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
                     width: 130,
                     borderRadius: 28,
                     onPressed: () {
-                      context.push(AppRoutes.boothApplicationFlow, extra: widget.exhibition);
+                      context.push(
+                        AppRoutes.boothApplicationFlow,
+                        extra: widget.exhibition,
+                      );
                     },
                   )
                 : GestureDetector(
@@ -998,14 +1145,20 @@ class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
   }
 
   Widget _buildAdminContextSection() {
+    // Build admin-only technical exhibition details.
     final String createdStr = widget.exhibition.createdAt != null
         ? DateFormatHelper.formatDateTime(widget.exhibition.createdAt!)
         : 'N/A';
+
     final String updatedStr = widget.exhibition.updatedAt != null
         ? DateFormatHelper.formatDateTime(widget.exhibition.updatedAt!)
         : 'N/A';
-    final String publishStatus = widget.exhibition.isPublished ? 'Published' : 'Draft';
-    final String bookingStatus = widget.exhibition.isBookingOpen ? 'Booking Open' : 'Booking Closed';
+
+    final String publishStatus =
+        widget.exhibition.isPublished ? 'Published' : 'Draft';
+
+    final String bookingStatus =
+        widget.exhibition.isBookingOpen ? 'Booking Open' : 'Booking Closed';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1013,7 +1166,8 @@ class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
         const SizedBox(height: AppSpacing.xl),
         const Divider(height: 1, color: AppColors.border),
         const SizedBox(height: AppSpacing.l),
-        // Section Title Header
+
+        // Admin context title.
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 12),
           child: Text(
@@ -1026,7 +1180,8 @@ class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
             ),
           ),
         ),
-        // Technical Details Card
+
+        // Technical details card.
         Container(
           margin: const EdgeInsets.only(bottom: 20),
           width: double.infinity,
@@ -1034,14 +1189,21 @@ class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
           decoration: BoxDecoration(
             color: const Color(0xFFF9F9F9),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.grey.shade100, width: 0.8),
+            border: Border.all(
+              color: Colors.grey.shade100,
+              width: 0.8,
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Icon(Icons.admin_panel_settings_outlined, size: 16, color: Colors.grey.shade600),
+                  Icon(
+                    Icons.admin_panel_settings_outlined,
+                    size: 16,
+                    color: Colors.grey.shade600,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     'TECHNICAL DETAILS',
@@ -1055,12 +1217,36 @@ class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
                 ],
               ),
               const SizedBox(height: 16),
-              _buildAdminInfoRow(label: 'Exhibition ID', value: widget.exhibition.id, showDivider: true),
-              _buildAdminInfoRow(label: 'Created By ID', value: widget.exhibition.organizerId, showDivider: true),
-              _buildAdminInfoRow(label: 'Publish Status', value: publishStatus, showDivider: true),
-              _buildAdminInfoRow(label: 'Booking Status', value: bookingStatus, showDivider: true),
-              _buildAdminInfoRow(label: 'Created At', value: createdStr, showDivider: true),
-              _buildAdminInfoRow(label: 'Updated At', value: updatedStr, showDivider: false),
+              _buildAdminInfoRow(
+                label: 'Exhibition ID',
+                value: widget.exhibition.id,
+                showDivider: true,
+              ),
+              _buildAdminInfoRow(
+                label: 'Created By ID',
+                value: widget.exhibition.organizerId,
+                showDivider: true,
+              ),
+              _buildAdminInfoRow(
+                label: 'Publish Status',
+                value: publishStatus,
+                showDivider: true,
+              ),
+              _buildAdminInfoRow(
+                label: 'Booking Status',
+                value: bookingStatus,
+                showDivider: true,
+              ),
+              _buildAdminInfoRow(
+                label: 'Created At',
+                value: createdStr,
+                showDivider: true,
+              ),
+              _buildAdminInfoRow(
+                label: 'Updated At',
+                value: updatedStr,
+                showDivider: false,
+              ),
             ],
           ),
         ),
@@ -1073,6 +1259,7 @@ class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
     required String? value,
     bool showDivider = true,
   }) {
+    // Build one admin technical information row.
     final bool hasValue = value != null && value.trim().isNotEmpty;
     final String displayValue = hasValue ? value.trim() : 'Not provided';
 
@@ -1102,7 +1289,9 @@ class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
                       style: TextStyle(
                         fontSize: 14.5,
                         fontWeight: FontWeight.w600,
-                        color: hasValue ? AppColors.primaryText : Colors.grey.shade400,
+                        color: hasValue
+                            ? AppColors.primaryText
+                            : Colors.grey.shade400,
                         height: 1.3,
                       ),
                     ),
@@ -1124,5 +1313,3 @@ class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
     );
   }
 }
-
-

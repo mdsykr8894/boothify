@@ -3,9 +3,10 @@ import '../constants/app_colors.dart';
 import '../constants/app_spacing.dart';
 import 'app_button.dart';
 
+// Reusable bottom sheet layout.
 class AppBottomSheetScaffold extends StatelessWidget {
   final String title;
-  final String? subtitle; // Kept for backward compatibility but ignored visually
+  final String? subtitle;
   final Widget child;
   final String primaryLabel;
   final VoidCallback? onPrimaryPressed;
@@ -13,16 +14,14 @@ class AppBottomSheetScaffold extends StatelessWidget {
   final VoidCallback? onSecondaryPressed;
   final bool isLoading;
   final bool isPrimaryEnabled;
-  final Color? primaryColor; // Custom primary button background color
-  final bool showCloseButton; // Custom control flag to toggle top-right close icon
-  final bool showCancelButton; // Custom control flag to toggle cancel action button
-  final double primaryHeight; // Primary button height override
-  final double primaryBorderRadius; // Primary button border radius override
-  final bool showDivider; // Control flag to show/hide divider under title
-
-  // Sizing & Scroll Enhancements
-  final bool isScrollable; // If true, enables sticky action buttons and constrains content height
-  final double? maxHeightFactor; // Factor of screen height (e.g. 0.8 for 80% screen height cap)
+  final Color? primaryColor;
+  final bool showCloseButton;
+  final bool showCancelButton;
+  final double primaryHeight;
+  final double primaryBorderRadius;
+  final bool showDivider;
+  final bool isScrollable;
+  final double? maxHeightFactor;
 
   const AppBottomSheetScaffold({
     super.key,
@@ -36,12 +35,12 @@ class AppBottomSheetScaffold extends StatelessWidget {
     this.isLoading = false,
     this.isPrimaryEnabled = true,
     this.primaryColor,
-    this.showCloseButton = false, // Minimalist: hidden by default
-    this.showCancelButton = false, // Minimalist: hidden by default
-    this.primaryHeight = 62.0, // Premium: enlarged to 62.0 by default
+    this.showCloseButton = false,
+    this.showCancelButton = false,
+    this.primaryHeight = 62.0,
     this.primaryBorderRadius = 16.0,
-    this.showDivider = false, // Minimalist: hidden by default
-    this.isScrollable = false, // Default is compact legacy single-scroll
+    this.showDivider = false,
+    this.isScrollable = false,
     this.maxHeightFactor,
   });
 
@@ -80,6 +79,8 @@ class AppBottomSheetScaffold extends StatelessWidget {
             ],
           ),
         ),
+
+        // Show optional close button.
         if (showCloseButton) ...[
           const SizedBox(width: 12),
           IconButton(
@@ -107,6 +108,7 @@ class AppBottomSheetScaffold extends StatelessWidget {
 
   Widget _buildChild(BuildContext context) {
     return Theme(
+      // Apply bottom sheet input styling.
       data: Theme.of(context).copyWith(
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
@@ -124,7 +126,10 @@ class AppBottomSheetScaffold extends StatelessWidget {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(color: AppColors.primaryAccent, width: 1.5),
+            borderSide: const BorderSide(
+              color: AppColors.primaryAccent,
+              width: 1.5,
+            ),
           ),
           errorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
@@ -143,7 +148,9 @@ class AppBottomSheetScaffold extends StatelessWidget {
   Widget _buildActionButtons(BuildContext context) {
     return Row(
       children: [
-        if (showCancelButton && (onSecondaryPressed != null || secondaryLabel == 'Cancel')) ...[
+        // Show optional cancel button.
+        if (showCancelButton &&
+            (onSecondaryPressed != null || secondaryLabel == 'Cancel')) ...[
           Expanded(
             child: TextButton(
               onPressed: onSecondaryPressed ?? () => Navigator.pop(context),
@@ -163,6 +170,8 @@ class AppBottomSheetScaffold extends StatelessWidget {
           ),
           const SizedBox(width: 16),
         ],
+
+        // Show primary action button.
         Expanded(
           flex: showCancelButton ? 2 : 1,
           child: AppButton(
@@ -183,7 +192,7 @@ class AppBottomSheetScaffold extends StatelessWidget {
     final Widget mainContent;
 
     if (!isScrollable) {
-      // Legacy compact behavior
+      // Use compact bottom sheet layout.
       mainContent = Container(
         padding: EdgeInsets.only(
           left: AppSpacing.screenHorizontal,
@@ -214,7 +223,7 @@ class AppBottomSheetScaffold extends StatelessWidget {
         ),
       );
     } else {
-      // Scrollable & sticky button behavior
+      // Use scrollable bottom sheet layout.
       final screenHeight = MediaQuery.of(context).size.height;
       final maxSheetHeight = screenHeight * (maxHeightFactor ?? 0.85);
 
@@ -263,6 +272,7 @@ class AppBottomSheetScaffold extends StatelessWidget {
   }
 }
 
+// Remove overscroll glow effect.
 class NoOverscrollBehavior extends ScrollBehavior {
   @override
   Widget buildOverscrollIndicator(

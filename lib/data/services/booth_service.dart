@@ -8,14 +8,15 @@ class BoothService {
   final String _collection = 'booth_packages';
   final ExhibitionService _exhibitionService = ExhibitionService();
 
-  /// Fetch all booth packages for a specific exhibition.
   Future<List<BoothModel>> fetchBoothPackages(String exhibitionId) async {
     try {
+      // Fetch booth packages for one exhibition.
       final querySnapshot = await _firestore
           .collection(_collection)
           .where('exhibitionId', isEqualTo: exhibitionId)
           .get();
 
+      // Convert Firestore documents into BoothModel list.
       return querySnapshot.docs
           .map((doc) => BoothModel.fromMap(doc.data(), doc.id))
           .toList();
@@ -25,11 +26,14 @@ class BoothService {
     }
   }
 
-  /// Create a new booth package.
   Future<bool> createBoothPackage(BoothModel booth) async {
     try {
+      // Create new booth package document.
       await _firestore.collection(_collection).add(booth.toMap());
+
+      // Update exhibition timestamp after package change.
       await _exhibitionService.touchExhibition(booth.exhibitionId);
+
       return true;
     } catch (e) {
       debugPrint('Error creating booth package: $e');
@@ -37,14 +41,17 @@ class BoothService {
     }
   }
 
-  /// Update an existing booth package.
   Future<bool> updateBoothPackage(BoothModel booth) async {
     try {
+      // Update existing booth package document.
       await _firestore
           .collection(_collection)
           .doc(booth.id)
           .update(booth.toMap());
+
+      // Update exhibition timestamp after package change.
       await _exhibitionService.touchExhibition(booth.exhibitionId);
+
       return true;
     } catch (e) {
       debugPrint('Error updating booth package: $e');
@@ -52,11 +59,14 @@ class BoothService {
     }
   }
 
-  /// Delete a booth package.
   Future<bool> deleteBoothPackage(String boothId, String exhibitionId) async {
     try {
+      // Delete booth package document.
       await _firestore.collection(_collection).doc(boothId).delete();
+
+      // Update exhibition timestamp after package change.
       await _exhibitionService.touchExhibition(exhibitionId);
+
       return true;
     } catch (e) {
       debugPrint('Error deleting booth package: $e');

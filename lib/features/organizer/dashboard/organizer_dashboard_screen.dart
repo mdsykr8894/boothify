@@ -13,14 +13,17 @@ import '../../../providers/auth_provider.dart';
 import '../../../providers/exhibition_provider.dart';
 import '../../shared/wrappers/organizer_wrapper.dart';
 
+// Display organizer dashboard overview.
 class OrganizerDashboardScreen extends StatefulWidget {
   const OrganizerDashboardScreen({super.key});
 
   @override
-  State<OrganizerDashboardScreen> createState() => _OrganizerDashboardScreenState();
+  State<OrganizerDashboardScreen> createState() =>
+      _OrganizerDashboardScreenState();
 }
 
 class _OrganizerDashboardScreenState extends State<OrganizerDashboardScreen> {
+  // Track last organizer data fetch.
   String? _lastFetchedUserId;
 
   @override
@@ -31,11 +34,16 @@ class _OrganizerDashboardScreenState extends State<OrganizerDashboardScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+
     final user = context.watch<AuthProvider>().currentUser;
+
+    // Reset fetch state when user logs out.
     if (user == null) {
       _lastFetchedUserId = null;
     } else if (user.uid != _lastFetchedUserId) {
       _lastFetchedUserId = user.uid;
+
+      // Fetch organizer data after first frame.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         _fetchData();
@@ -45,7 +53,9 @@ class _OrganizerDashboardScreenState extends State<OrganizerDashboardScreen> {
 
   void _fetchData() {
     final user = context.read<AuthProvider>().currentUser;
+
     if (user != null) {
+      // Load organizer exhibitions and applications.
       context.read<ExhibitionProvider>().fetchOrganizerExhibitions(user.uid);
       context.read<ApplicationProvider>().fetchOrganizerApplications(user.uid);
     }
@@ -57,25 +67,25 @@ class _OrganizerDashboardScreenState extends State<OrganizerDashboardScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.l),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFFBEB), // Soft warm cream background
+        color: const Color(0xFFFFFBEB),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.orange.shade200, // Subtle orange border
-          width: 1.0,
-        ),
+        border: Border.all(color: Colors.orange.shade200, width: 1.0),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
+          // Navigate to applications tab.
           onTap: () {
-            context.findAncestorStateOfType<OrganizerWrapperState>()?.setIndex(2);
+            context.findAncestorStateOfType<OrganizerWrapperState>()?.setIndex(
+              2,
+            );
           },
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
             child: Row(
               children: [
                 Icon(
-                  Icons.flash_on_rounded, // Lightning icon
+                  Icons.flash_on_rounded,
                   color: Colors.orange.shade700,
                   size: 28,
                 ),
@@ -153,7 +163,10 @@ class _OrganizerDashboardScreenState extends State<OrganizerDashboardScreen> {
                 icon: Icons.calendar_today_outlined,
                 label: 'Manage Exhibitions',
                 onTap: () {
-                  context.findAncestorStateOfType<OrganizerWrapperState>()?.setIndex(1);
+                  // Navigate to exhibitions tab.
+                  context
+                      .findAncestorStateOfType<OrganizerWrapperState>()
+                      ?.setIndex(1);
                 },
                 isLast: false,
               ),
@@ -161,7 +174,10 @@ class _OrganizerDashboardScreenState extends State<OrganizerDashboardScreen> {
                 icon: Icons.fact_check_outlined,
                 label: 'Review Applications',
                 onTap: () {
-                  context.findAncestorStateOfType<OrganizerWrapperState>()?.setIndex(2);
+                  // Navigate to applications tab.
+                  context
+                      .findAncestorStateOfType<OrganizerWrapperState>()
+                      ?.setIndex(2);
                 },
                 isLast: false,
               ),
@@ -169,6 +185,7 @@ class _OrganizerDashboardScreenState extends State<OrganizerDashboardScreen> {
                 icon: Icons.add_circle_outline,
                 label: 'Create Exhibition',
                 onTap: () {
+                  // Navigate to create exhibition screen.
                   context.push(AppRoutes.organizerCreateExhibition);
                 },
                 isLast: true,
@@ -190,7 +207,7 @@ class _OrganizerDashboardScreenState extends State<OrganizerDashboardScreen> {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: isLast 
+        borderRadius: isLast
             ? const BorderRadius.vertical(bottom: Radius.circular(16))
             : null,
         child: Column(
@@ -205,11 +222,7 @@ class _OrganizerDashboardScreenState extends State<OrganizerDashboardScreen> {
                       color: AppColors.primaryAccent.withValues(alpha: 0.08),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(
-                      icon,
-                      color: AppColors.primaryAccent,
-                      size: 20,
-                    ),
+                    child: Icon(icon, color: AppColors.primaryAccent, size: 20),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -235,7 +248,7 @@ class _OrganizerDashboardScreenState extends State<OrganizerDashboardScreen> {
                 height: 1,
                 thickness: 1,
                 color: Colors.grey.shade100,
-                indent: 58, // Exclude the icon from the divider line
+                indent: 58,
               ),
           ],
         ),
@@ -247,21 +260,33 @@ class _OrganizerDashboardScreenState extends State<OrganizerDashboardScreen> {
   Widget build(BuildContext context) {
     final exhibitionProvider = context.watch<ExhibitionProvider>();
     final applicationProvider = context.watch<ApplicationProvider>();
-    
-    final isLoading = exhibitionProvider.isLoading || applicationProvider.isLoading;
+
+    // Check dashboard loading state.
+    final isLoading =
+        exhibitionProvider.isLoading || applicationProvider.isLoading;
 
     final exhibitions = exhibitionProvider.organizerExhibitions;
     final applications = applicationProvider.organizerApplications;
 
+    // Count organizer exhibitions.
     final totalExhibitions = exhibitions.length;
+
+    // Count published exhibitions.
     final publishedCount = exhibitions.where((e) => e.isPublished).length;
+
+    // Count draft exhibitions.
     final draftCount = totalExhibitions - publishedCount;
 
+    // Count pending applications.
     final pendingApps = applications.where((a) => a.status == 'Pending').length;
-    final approvedApps = applications.where((a) => a.status == 'Approved').length;
+
+    // Count approved applications.
+    final approvedApps = applications
+        .where((a) => a.status == 'Approved')
+        .length;
 
     return Scaffold(
-      backgroundColor: Colors.white, // Premium white background
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
@@ -270,26 +295,34 @@ class _OrganizerDashboardScreenState extends State<OrganizerDashboardScreen> {
               child: isLoading
                   ? const AppLoading()
                   : RefreshIndicator(
+                      // Refresh dashboard data.
                       onRefresh: () async => _fetchData(),
                       child: ListView(
-                        physics: const ClampingScrollPhysics(), // Prevent stretch bounce
+                        physics: const ClampingScrollPhysics(),
                         padding: const EdgeInsets.symmetric(
                           horizontal: AppSpacing.screenHorizontal,
                           vertical: AppSpacing.m,
                         ),
                         children: [
-                          // 1. Premium Unified Dark AppHeroCard
+                          // Show organizer summary card.
                           AppHeroCard(
                             title: 'Organizer',
                             icon: Icons.event_outlined,
-                            mainValue: '$totalExhibitions ${totalExhibitions == 1 ? 'Managed Event' : 'Managed Events'}',
-                            subtitle: 'Manage exhibitions and booth applications.',
+                            mainValue:
+                                '$totalExhibitions ${totalExhibitions == 1 ? 'Managed Event' : 'Managed Events'}',
+                            subtitle:
+                                'Manage exhibitions and booth applications.',
                             isDark: true,
                             stats: [
+                              // Show total applications stat.
                               Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.description_outlined, size: 16, color: Colors.white.withValues(alpha: 0.6)),
+                                  Icon(
+                                    Icons.description_outlined,
+                                    size: 16,
+                                    color: Colors.white.withValues(alpha: 0.6),
+                                  ),
                                   const SizedBox(width: 6),
                                   Text(
                                     '${applications.length} ${applications.length == 1 ? 'Application' : 'Applications'}',
@@ -301,10 +334,16 @@ class _OrganizerDashboardScreenState extends State<OrganizerDashboardScreen> {
                                   ),
                                 ],
                               ),
+
+                              // Show published events stat.
                               Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.public, size: 16, color: Colors.white.withValues(alpha: 0.6)),
+                                  Icon(
+                                    Icons.public,
+                                    size: 16,
+                                    color: Colors.white.withValues(alpha: 0.6),
+                                  ),
                                   const SizedBox(width: 6),
                                   Text(
                                     '$publishedCount Published',
@@ -320,10 +359,10 @@ class _OrganizerDashboardScreenState extends State<OrganizerDashboardScreen> {
                           ),
                           const SizedBox(height: AppSpacing.l),
 
-                          // 2. Actionable Pending Reviews Alert Banner
+                          // Show pending review shortcut.
                           _buildPendingAlert(pendingApps),
 
-                          // 3. Overview Metric Grid Section
+                          // Show dashboard overview title.
                           const Text(
                             'Overview',
                             style: TextStyle(
@@ -334,32 +373,41 @@ class _OrganizerDashboardScreenState extends State<OrganizerDashboardScreen> {
                             ),
                           ),
                           const SizedBox(height: AppSpacing.m),
+
+                          // Show overview metric cards.
                           GridView.count(
                             crossAxisCount: 2,
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             mainAxisSpacing: AppSpacing.m,
                             crossAxisSpacing: AppSpacing.m,
-                            childAspectRatio: 1.25, // Perfectly balanced spacing ratio
+                            childAspectRatio: 1.25,
                             children: [
+                              // Show published exhibitions count.
                               DashboardSummaryCard(
                                 title: 'Published',
                                 value: publishedCount.toString(),
                                 icon: Icons.public,
                                 subtitle: 'Live in explore',
                               ),
+
+                              // Show draft exhibitions count.
                               DashboardSummaryCard(
                                 title: 'Drafts',
                                 value: draftCount.toString(),
                                 icon: Icons.edit_note,
                                 subtitle: 'Unpublished events',
                               ),
+
+                              // Show pending applications count.
                               DashboardSummaryCard(
                                 title: 'Pending',
                                 value: pendingApps.toString(),
                                 icon: Icons.pending_actions,
                                 subtitle: 'Requires action',
                               ),
+
+                              // Show approved applications count.
                               DashboardSummaryCard(
                                 title: 'Approved',
                                 value: approvedApps.toString(),
@@ -370,7 +418,7 @@ class _OrganizerDashboardScreenState extends State<OrganizerDashboardScreen> {
                           ),
                           const SizedBox(height: AppSpacing.l),
 
-                          // 4. Premium Quick Actions
+                          // Show organizer quick actions.
                           _buildQuickActions(context),
                           const SizedBox(height: AppSpacing.l),
                         ],

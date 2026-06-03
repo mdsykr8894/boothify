@@ -16,6 +16,7 @@ import 'widgets/create_floor_layout_bottom_sheet.dart';
 import 'widgets/edit_floor_layout_bottom_sheet.dart';
 import '../../../core/utils/feedback_helper.dart';
 
+// Display booth spots and floor plan layout.
 class BoothSpotsScreen extends StatefulWidget {
   final ExhibitionModel exhibition;
 
@@ -29,41 +30,57 @@ class _BoothSpotsScreenState extends State<BoothSpotsScreen> {
   @override
   void initState() {
     super.initState();
+
+    // Load booth spots and packages after first frame.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fetchData();
     });
   }
 
   void _fetchData() {
+    // Load floor plan spots and booth packages.
     context.read<BoothSpotProvider>().fetchBoothSpots(widget.exhibition.id);
     context.read<BoothProvider>().fetchBoothPackages(widget.exhibition.id);
   }
 
-  void _showAddSpotSheet(bool isLayoutEmpty, List<BoothSpotModel> spots, int rowsCount, int columnsCount) {
+  void _showAddSpotSheet(
+    bool isLayoutEmpty,
+    List<BoothSpotModel> spots,
+    int rowsCount,
+    int columnsCount,
+  ) {
     if (isLayoutEmpty) {
+      // Create floor layout before adding spots.
       showModalBottomSheet(
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
-        builder: (context) => CreateFloorLayoutBottomSheet(exhibitionId: widget.exhibition.id),
+        builder: (context) =>
+            CreateFloorLayoutBottomSheet(exhibitionId: widget.exhibition.id),
       );
       return;
     }
 
-    // Scan in row-major order A01 to find the first empty slot coordinate
     String? nextAvailable;
+
+    // Find first empty booth coordinate.
     for (int r = 0; r < rowsCount; r++) {
       final rowLetter = String.fromCharCode('A'.codeUnitAt(0) + r);
+
       for (int c = 0; c < columnsCount; c++) {
         final colNumber = (c + 1).toString().padLeft(2, '0');
         final spotNum = '$rowLetter$colNumber';
 
-        final exists = spots.any((s) => s.spotNumber.trim().toUpperCase() == spotNum);
+        final exists = spots.any(
+          (s) => s.spotNumber.trim().toUpperCase() == spotNum,
+        );
+
         if (!exists) {
           nextAvailable = spotNum;
           break;
         }
       }
+
       if (nextAvailable != null) break;
     }
 
@@ -75,6 +92,7 @@ class _BoothSpotsScreenState extends State<BoothSpotsScreen> {
       return;
     }
 
+    // Open add booth spot bottom sheet.
     showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -87,10 +105,7 @@ class _BoothSpotsScreenState extends State<BoothSpotsScreen> {
       ),
     ).then((result) {
       if (result == true && mounted) {
-        FeedbackHelper.showSuccess(
-          context,
-          'Spot created successfully.',
-        );
+        FeedbackHelper.showSuccess(context, 'Spot created successfully.');
       }
     });
   }
@@ -106,29 +121,38 @@ class _BoothSpotsScreenState extends State<BoothSpotsScreen> {
         currentColumns: columns,
       ),
     ).then((_) {
-      // Reactive state sync - refreshes the exhibition list inside the provider!
       if (mounted) {
-        context.read<ExhibitionProvider>().fetchOrganizerExhibitions(widget.exhibition.organizerId);
+        // Refresh exhibition layout metadata.
+        context.read<ExhibitionProvider>().fetchOrganizerExhibitions(
+          widget.exhibition.organizerId,
+        );
       }
     });
   }
 
   int getRowIndex(String spotNumber) {
     if (spotNumber.isEmpty) return 0;
+
     final firstChar = spotNumber[0].toUpperCase();
-    if (firstChar.codeUnitAt(0) >= 'A'.codeUnitAt(0) && firstChar.codeUnitAt(0) <= 'Z'.codeUnitAt(0)) {
+
+    if (firstChar.codeUnitAt(0) >= 'A'.codeUnitAt(0) &&
+        firstChar.codeUnitAt(0) <= 'Z'.codeUnitAt(0)) {
       return firstChar.codeUnitAt(0) - 'A'.codeUnitAt(0);
     }
+
     return 0;
   }
 
   int getColIndex(String spotNumber) {
     if (spotNumber.length < 2) return 0;
+
     final digits = spotNumber.substring(1);
     final val = int.tryParse(digits);
+
     if (val != null) {
-      return val - 1; // 0-indexed
+      return val - 1;
     }
+
     return 0;
   }
 
@@ -141,7 +165,7 @@ class _BoothSpotsScreenState extends State<BoothSpotsScreen> {
     final spots = spotProvider.boothSpots;
     final isLoading = spotProvider.isLoading || boothProvider.isLoading;
 
-    // Reactively resolve the latest exhibition instance from provider to catch metadata changes!
+    // Get latest exhibition layout metadata.
     final exhibition = exhibitionProvider.organizerExhibitions.firstWhere(
       (e) => e.id == widget.exhibition.id,
       orElse: () => widget.exhibition,
@@ -149,15 +173,19 @@ class _BoothSpotsScreenState extends State<BoothSpotsScreen> {
 
     int maxRow = 0;
     int maxCol = 0;
+
+    // Calculate layout size from existing spots.
     for (final spot in spots) {
       final r = getRowIndex(spot.spotNumber);
       final c = getColIndex(spot.spotNumber);
+
       if (r > maxRow) maxRow = r;
       if (c > maxCol) maxCol = c;
     }
 
     final rowsCount = exhibition.layoutRows ?? (spots.isEmpty ? 0 : maxRow + 1);
-    final columnsCount = exhibition.layoutColumns ?? (spots.isEmpty ? 0 : maxCol + 1);
+    final columnsCount =
+        exhibition.layoutColumns ?? (spots.isEmpty ? 0 : maxCol + 1);
 
     return Scaffold(
       body: SafeArea(
@@ -169,12 +197,19 @@ class _BoothSpotsScreenState extends State<BoothSpotsScreen> {
               actions: spots.isNotEmpty && !isLoading
                   ? [
                       IconButton(
-                        onPressed: () => _showEditLayoutSheet(exhibition, rowsCount, columnsCount),
+                        // Open layout editor.
+                        onPressed: () => _showEditLayoutSheet(
+                          exhibition,
+                          rowsCount,
+                          columnsCount,
+                        ),
                         icon: const Icon(Icons.edit_outlined),
                       ),
                     ]
                   : null,
             ),
+
+            // Show booth status summary.
             if (!isLoading && spots.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.fromLTRB(
@@ -237,18 +272,21 @@ class _BoothSpotsScreenState extends State<BoothSpotsScreen> {
               child: isLoading
                   ? const AppLoading()
                   : spots.isEmpty
-                      ? const AppEmptyState(
-                          title: 'No Floor Layout Yet',
-                          message: 'Create booth locations and assign packages.',
-                          icon: Icons.map_outlined,
-                        )
-                      : _buildFloorPlanCanvas(spots, rowsCount, columnsCount),
+                  ? const AppEmptyState(
+                      title: 'No Floor Layout Yet',
+                      message: 'Create booth locations and assign packages.',
+                      icon: Icons.map_outlined,
+                    )
+                  : _buildFloorPlanCanvas(spots, rowsCount, columnsCount),
             ),
           ],
         ),
       ),
+
+      // Show create layout or add spot action.
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddSpotSheet(spots.isEmpty, spots, rowsCount, columnsCount),
+        onPressed: () =>
+            _showAddSpotSheet(spots.isEmpty, spots, rowsCount, columnsCount),
         backgroundColor: AppColors.primaryText,
         icon: const Icon(Icons.add, color: Colors.white),
         label: Text(
@@ -266,10 +304,7 @@ class _BoothSpotsScreenState extends State<BoothSpotsScreen> {
         Container(
           width: 8,
           height: 8,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 6),
         Text(
@@ -293,15 +328,21 @@ class _BoothSpotsScreenState extends State<BoothSpotsScreen> {
     );
   }
 
-  Widget _buildFloorPlanCanvas(List<BoothSpotModel> spots, int rowsCount, int columnsCount) {
+  Widget _buildFloorPlanCanvas(
+    List<BoothSpotModel> spots,
+    int rowsCount,
+    int columnsCount,
+  ) {
     final List<List<BoothSpotModel?>> grid = List.generate(
       rowsCount,
       (_) => List.filled(columnsCount, null),
     );
 
+    // Place booth spots into layout grid.
     for (final spot in spots) {
       final r = getRowIndex(spot.spotNumber);
       final c = getColIndex(spot.spotNumber);
+
       if (r >= 0 && r < rowsCount && c >= 0 && c < columnsCount) {
         grid[r][c] = spot;
       }
@@ -319,10 +360,7 @@ class _BoothSpotsScreenState extends State<BoothSpotsScreen> {
         decoration: BoxDecoration(
           color: Colors.grey.shade50,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: Colors.grey.shade200,
-            width: 1.2,
-          ),
+          border: Border.all(color: Colors.grey.shade200, width: 1.2),
         ),
         child: Center(
           child: Column(
@@ -367,15 +405,15 @@ class _BoothSpotsScreenState extends State<BoothSpotsScreen> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final double availableHeight = constraints.maxHeight;
-        
-        final double tileHeight = 165.0; // 155.0 tile height + 10.0 vertical margins (5 top, 5 bottom)
-        final double headerHeight = 24.0 + 24.0 + 10.0; // SizedBox + Header + SizedBox
-        final double baseDecorHeight = 40.0; // outer container margins + canvas padding
-        
+
+        final double tileHeight = 165.0;
+        final double headerHeight = 24.0 + 24.0 + 10.0;
+        final double baseDecorHeight = 40.0;
+
         final double desiredHeight = (rowsCount * tileHeight) + baseDecorHeight;
         final double maxGridHeight = availableHeight - headerHeight;
-        final double containerHeight = desiredHeight <= maxGridHeight 
-            ? desiredHeight 
+        final double containerHeight = desiredHeight <= maxGridHeight
+            ? desiredHeight
             : (maxGridHeight > 100 ? maxGridHeight : 100.0);
 
         final double matrixWidth = columnsCount * 155.0;
@@ -392,9 +430,9 @@ class _BoothSpotsScreenState extends State<BoothSpotsScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.screenHorizontal,
-                0, // Top margin is zero due to section heading spacing
+                0,
                 AppSpacing.screenHorizontal,
-                0, // Keep container flush to layout borders
+                0,
               ),
               child: Container(
                 height: containerHeight,
@@ -454,9 +492,16 @@ class _BoothSpotsScreenState extends State<BoothSpotsScreen> {
       },
     );
   }
-  Widget _buildSectionHeader(String title, {String? trailing, IconData? trailingIcon}) {
+
+  Widget _buildSectionHeader(
+    String title, {
+    String? trailing,
+    IconData? trailingIcon,
+  }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal + 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.screenHorizontal + 4,
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [

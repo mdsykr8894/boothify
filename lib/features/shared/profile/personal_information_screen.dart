@@ -7,6 +7,7 @@ import '../../../core/widgets/app_text_field.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../core/utils/feedback_helper.dart';
 
+// Display and edit personal information.
 class PersonalInformationScreen extends StatelessWidget {
   const PersonalInformationScreen({super.key});
 
@@ -29,7 +30,8 @@ class PersonalInformationScreen extends StatelessWidget {
               child: user == null
                   ? const Center(child: CircularProgressIndicator())
                   : ScrollConfiguration(
-                      behavior: ScrollConfiguration.of(context).copyWith(overscroll: false),
+                      behavior: ScrollConfiguration.of(context)
+                          .copyWith(overscroll: false),
                       child: SingleChildScrollView(
                         physics: const ClampingScrollPhysics(),
                         padding: const EdgeInsets.only(
@@ -41,7 +43,7 @@ class PersonalInformationScreen extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Row 1: Legal Name
+                            // Show legal name.
                             _buildInfoRow(
                               context,
                               label: 'Legal name',
@@ -56,7 +58,7 @@ class PersonalInformationScreen extends StatelessWidget {
                             ),
                             _buildDivider(),
 
-                            // Row 2: Preferred Name
+                            // Show preferred name.
                             _buildInfoRow(
                               context,
                               label: 'Preferred first name',
@@ -70,7 +72,7 @@ class PersonalInformationScreen extends StatelessWidget {
                             ),
                             _buildDivider(),
 
-                            // Row 3: Phone Number
+                            // Show phone number.
                             _buildInfoRow(
                               context,
                               label: 'Phone number',
@@ -85,7 +87,7 @@ class PersonalInformationScreen extends StatelessWidget {
                             ),
                             _buildDivider(),
 
-                            // Row 4: Email Address
+                            // Show email address.
                             _buildInfoRow(
                               context,
                               label: 'Email address',
@@ -101,7 +103,7 @@ class PersonalInformationScreen extends StatelessWidget {
                             ),
                             _buildDivider(),
 
-                            // Row 5: Residential Address
+                            // Show residential address.
                             _buildInfoRow(
                               context,
                               label: 'Residential address',
@@ -116,7 +118,7 @@ class PersonalInformationScreen extends StatelessWidget {
                             ),
                             _buildDivider(),
 
-                            // Row 6: Postal Address
+                            // Show postal address.
                             _buildInfoRow(
                               context,
                               label: 'Postal address',
@@ -131,7 +133,7 @@ class PersonalInformationScreen extends StatelessWidget {
                             ),
                             _buildDivider(),
 
-                            // Row 7: Emergency Contact
+                            // Show emergency contact.
                             _buildInfoRow(
                               context,
                               label: 'Emergency contact',
@@ -145,11 +147,12 @@ class PersonalInformationScreen extends StatelessWidget {
                             ),
                             _buildDivider(),
 
-                            // Row 8: Identity Verification Status (DISPLAY ONLY)
+                            // Show verification status.
                             _buildInfoRow(
                               context,
                               label: 'Identity verification',
-                              value: user.isVerified ? 'Verified' : 'Not verified',
+                              value:
+                                  user.isVerified ? 'Verified' : 'Not verified',
                               isReadOnly: true,
                             ),
                             const SizedBox(height: 40),
@@ -180,7 +183,8 @@ class PersonalInformationScreen extends StatelessWidget {
     bool isReadOnly = false,
   }) {
     final bool hasValue = value != null && value.trim().isNotEmpty;
-    final String displayValue = (value != null && value.trim().isNotEmpty) ? value : 'Not provided';
+    final String displayValue =
+        (value != null && value.trim().isNotEmpty) ? value : 'Not provided';
     final String actionText = isReadOnly ? '' : (hasValue ? 'Edit' : '+ Add');
 
     return Padding(
@@ -188,7 +192,7 @@ class PersonalInformationScreen extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Left details Column
+          // Show field label and value.
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -206,21 +210,28 @@ class PersonalInformationScreen extends StatelessWidget {
                   displayValue,
                   style: TextStyle(
                     fontSize: 15,
-                    color: hasValue ? Colors.grey.shade600 : Colors.grey.shade400,
+                    color:
+                        hasValue ? Colors.grey.shade600 : Colors.grey.shade400,
                     height: 1.4,
                   ),
                 ),
               ],
             ),
           ),
-          // Right Action Button
+
+          // Show edit or add action.
           if (!isReadOnly && onActionPressed != null) ...[
             const SizedBox(width: 16),
             InkWell(
               onTap: onActionPressed,
               borderRadius: BorderRadius.circular(4),
               child: Padding(
-                padding: const EdgeInsets.only(left: 12, top: 2, right: 2, bottom: 2),
+                padding: const EdgeInsets.only(
+                  left: 12,
+                  top: 2,
+                  right: 2,
+                  bottom: 2,
+                ),
                 child: Text(
                   actionText,
                   style: const TextStyle(
@@ -264,6 +275,7 @@ class PersonalInformationScreen extends StatelessWidget {
   }
 }
 
+// Bottom sheet for editing one profile field.
 class _EditFieldBottomSheet extends StatefulWidget {
   final String fieldName;
   final String label;
@@ -294,6 +306,8 @@ class _EditFieldBottomSheetState extends State<_EditFieldBottomSheet> {
   @override
   void initState() {
     super.initState();
+
+    // Fill field with current value.
     _controller = TextEditingController(text: widget.currentValue);
   }
 
@@ -310,18 +324,21 @@ class _EditFieldBottomSheetState extends State<_EditFieldBottomSheet> {
 
     if (_formKey.currentState?.validate() ?? false) {
       setState(() => _isSaving = true);
-      
+
       final String finalVal = _controller.text.trim();
       final authProvider = context.read<AuthProvider>();
 
+      // Update selected personal information field.
       final bool success = await authProvider.updatePersonalInformation({
         widget.fieldName: finalVal,
       });
 
       if (mounted) {
         setState(() => _isSaving = false);
+
         if (success) {
           Navigator.pop(context);
+
           if (context.mounted) {
             FeedbackHelper.showSuccess(
               context,
@@ -330,7 +347,8 @@ class _EditFieldBottomSheetState extends State<_EditFieldBottomSheet> {
           }
         } else {
           setState(() {
-            _formError = authProvider.errorMessage ?? 'Failed to save changes. Please try again.';
+            _formError =
+                authProvider.errorMessage ?? 'Failed to save changes. Please try again.';
           });
         }
       }
@@ -350,10 +368,14 @@ class _EditFieldBottomSheetState extends State<_EditFieldBottomSheet> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Show form error message.
             if (_formError != null) ...[
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.primaryAccent.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(12),
@@ -385,6 +407,8 @@ class _EditFieldBottomSheetState extends State<_EditFieldBottomSheet> {
               ),
               const SizedBox(height: 16),
             ],
+
+            // Edit selected profile field.
             AppTextField(
               controller: _controller,
               label: widget.label,
@@ -395,6 +419,7 @@ class _EditFieldBottomSheetState extends State<_EditFieldBottomSheet> {
                 if (widget.isRequired && (val == null || val.trim().isEmpty)) {
                   return 'This field is required';
                 }
+
                 return null;
               },
             ),

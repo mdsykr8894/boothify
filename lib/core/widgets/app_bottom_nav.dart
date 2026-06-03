@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 
+// Reusable bottom navigation bar.
 class AppBottomNav extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTap;
@@ -16,6 +17,7 @@ class AppBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      // Add top border and soft shadow.
       decoration: BoxDecoration(
         color: AppColors.background,
         border: const Border(
@@ -33,6 +35,8 @@ class AppBottomNav extends StatelessWidget {
         currentIndex: currentIndex,
         onTap: onTap,
         items: items,
+
+        // Keep all navigation items visible.
         type: BottomNavigationBarType.fixed,
         backgroundColor: AppColors.background,
         selectedItemColor: AppColors.primaryAccent,
@@ -47,6 +51,8 @@ class AppBottomNav extends StatelessWidget {
           fontWeight: FontWeight.w400,
           height: 1.5,
         ),
+
+        // Use custom container shadow instead.
         elevation: 0,
       ),
     );

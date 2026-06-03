@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../constants/app_colors.dart';
 
+// Reusable date field for bottom sheet forms.
 class BottomSheetDateField extends StatelessWidget {
   final String innerLabel;
   final DateTime date;
@@ -20,6 +21,7 @@ class BottomSheetDateField extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: InkWell(
+        // Open date picker when tapped.
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Container(
@@ -38,6 +40,7 @@ class BottomSheetDateField extends StatelessWidget {
           ),
           child: Row(
             children: [
+              // Show date icon container.
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
@@ -56,6 +59,7 @@ class BottomSheetDateField extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    // Show small field label.
                     Text(
                       innerLabel.toUpperCase(),
                       style: TextStyle(
@@ -66,6 +70,8 @@ class BottomSheetDateField extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
+
+                    // Show formatted date value.
                     FittedBox(
                       fit: BoxFit.scaleDown,
                       child: Text(

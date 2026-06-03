@@ -3,85 +3,7 @@ import '../constants/app_colors.dart';
 import '../constants/app_radius.dart';
 import 'app_button.dart';
 
-/// A premium, reusable dialog box designed for standard confirmations, prompts,
-/// notifications, and action alerts inside the Boothify system.
-///
-/// Supports 4 preset semantic variants:
-/// * [DialogVariant.info] - Standard instructions or generic checks (Neutral dark accent, NOT brand pink by default)
-/// * [DialogVariant.success] - Successful operation completion (Green accent)
-/// * [DialogVariant.warning] - Cautions/Important reminders before proceeding (Orange/Amber accent)
-/// * [DialogVariant.destructive] - Deletions, blocks, blocks block blocks (Red accent)
-///
-/// ### Examples of Usage:
-///
-/// #### 1. Warning Confirmation Dialog:
-/// ```dart
-/// BaseDialog.show(
-///   context: context,
-///   title: 'Unpublish Event?',
-///   message: 'Are you sure you want to unpublish this exhibition? It will be hidden from draft and search explorers.',
-///   variant: DialogVariant.warning,
-///   primaryLabel: 'Unpublish',
-///   onPrimaryPressed: () {
-///     Navigator.pop(context);
-///     // Perform action...
-///   },
-/// );
-/// ```
-///
-/// #### 2. Destructive Confirmation Dialog:
-/// ```dart
-/// BaseDialog.show(
-///   context: context,
-///   title: 'Delete Package',
-///   message: 'Are you sure you want to permanently delete this booth package? This action is irreversible.',
-///   variant: DialogVariant.destructive,
-///   primaryLabel: 'Delete',
-///   onPrimaryPressed: () async {
-///     // Perform delete logic...
-///   },
-/// );
-/// ```
-///
-/// #### 3. Info / Neutral Confirmation:
-/// ```dart
-/// BaseDialog.show(
-///   context: context,
-///   title: 'Confirm Booking Details',
-///   message: 'Please review your booking details before proceeding to the final payment gateway.',
-///   variant: DialogVariant.info,
-///   primaryLabel: 'Confirm',
-///   secondaryLabel: 'Cancel',
-///   onPrimaryPressed: () => print('Booking confirmed!'),
-/// );
-/// ```
-///
-/// #### 4. Dialog with Custom Body Slot (e.g. Reject Application Form):
-/// ```dart
-/// final reasonController = TextEditingController();
-/// BaseDialog.show(
-///   context: context,
-///   title: 'Reject Application',
-///   message: 'Please provide a justification for rejecting this application.',
-///   variant: DialogVariant.destructive,
-///   primaryLabel: 'Reject',
-///   customBody: Padding(
-///     padding: const EdgeInsets.only(top: 16.0),
-///     child: AppTextField(
-///       controller: reasonController,
-///       label: 'Rejection Reason',
-///       hint: 'e.g. Insufficient catalog detail',
-///       maxLines: 2,
-///     ),
-///   ),
-///   onPrimaryPressed: () {
-///     final reason = reasonController.text.trim();
-///     if (reason.isNotEmpty) {
-///       Navigator.pop(context, reason);
-///     }
-///   },
-/// );
-/// ```
+// Reusable app dialog.
 class BaseDialog extends StatelessWidget {
   final String title;
   final String message;
@@ -112,8 +34,7 @@ class BaseDialog extends StatelessWidget {
     this.customFooter,
   });
 
-  /// Static helper to trigger the dialog directly in the screen tree context.
-  /// Set [barrierDismissible] to false only for highly critical or submission operations.
+  // Show dialog from screen context.
   static Future<T?> show<T>({
     required BuildContext context,
     required String title,
@@ -151,6 +72,7 @@ class BaseDialog extends StatelessWidget {
   }
 
   Color _getVariantAccentColor() {
+    // Set icon color based on dialog type.
     switch (variant) {
       case DialogVariant.success:
         return AppColors.success;
@@ -164,6 +86,7 @@ class BaseDialog extends StatelessWidget {
   }
 
   Color _getVariantBgColor() {
+    // Set icon background based on dialog type.
     switch (variant) {
       case DialogVariant.success:
         return const Color(0xFFE8F5E9);
@@ -177,6 +100,7 @@ class BaseDialog extends StatelessWidget {
   }
 
   Color _getVariantButtonColor() {
+    // Set primary button color based on dialog type.
     switch (variant) {
       case DialogVariant.success:
         return AppColors.success;
@@ -191,6 +115,8 @@ class BaseDialog extends StatelessWidget {
 
   IconData _getVariantIcon() {
     if (icon != null) return icon!;
+
+    // Use default icon based on dialog type.
     switch (variant) {
       case DialogVariant.success:
         return Icons.check_circle_outline_rounded;
@@ -217,7 +143,7 @@ class BaseDialog extends StatelessWidget {
             text: primaryLabel!,
             color: _getVariantButtonColor(),
             height: 52,
-            borderRadius: AppRadius.l, // matches standard app button style
+            borderRadius: AppRadius.l,
             isLoading: isLoading,
             onPressed: onPrimaryPressed,
           ),
@@ -270,7 +196,7 @@ class BaseDialog extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // 1. Semantic Accent Icon
+                  // Show semantic dialog icon.
                   Center(
                     child: Container(
                       width: 64,
@@ -288,7 +214,6 @@ class BaseDialog extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
 
-                  // 2. Bold Premium Title
                   Text(
                     title,
                     textAlign: TextAlign.center,
@@ -301,7 +226,6 @@ class BaseDialog extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
 
-                  // 3. Readable Description Message
                   Text(
                     message,
                     textAlign: TextAlign.center,
@@ -313,13 +237,13 @@ class BaseDialog extends StatelessWidget {
                     ),
                   ),
 
-                  // 4. Custom Body Slot
+                  // Show optional custom content.
                   if (customBody != null) ...[
                     customBody!,
                   ],
                   const SizedBox(height: 24),
 
-                  // 5. Standardized Action Footer
+                  // Show dialog action buttons.
                   _buildActionButtons(context),
                 ],
               ),

@@ -3,15 +3,12 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/status_badge.dart';
 import '../../../../data/models/user_model.dart';
 
+// Display single user card for admin.
 class AdminUserCard extends StatelessWidget {
   final UserModel user;
   final VoidCallback onTap;
 
-  const AdminUserCard({
-    super.key,
-    required this.user,
-    required this.onTap,
-  });
+  const AdminUserCard({super.key, required this.user, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -33,13 +30,17 @@ class AdminUserCard extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
         child: InkWell(
+          // Open selected user details.
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 18.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 20.0,
+              vertical: 18.0,
+            ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Left avatar
+                // Show user initial avatar.
                 Container(
                   width: 60,
                   height: 60,
@@ -63,7 +64,8 @@ class AdminUserCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 16),
-                 // Middle details
+
+                // Show user name, email, and badges.
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -90,6 +92,8 @@ class AdminUserCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 8),
+
+                      // Show role and account status.
                       Row(
                         children: [
                           StatusBadge(
@@ -107,7 +111,8 @@ class AdminUserCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                // Chevron icon
+
+                // Show navigation indicator.
                 Icon(
                   Icons.chevron_right_rounded,
                   color: Colors.grey.shade300,

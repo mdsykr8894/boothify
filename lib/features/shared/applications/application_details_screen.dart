@@ -20,25 +20,34 @@ import 'widgets/reject_application_dialog.dart';
 import 'widgets/payment_dialog.dart';
 import '../../../core/utils/feedback_helper.dart';
 
+// Display full application details.
 class ApplicationDetailsScreen extends StatefulWidget {
   final ApplicationModel application;
 
   const ApplicationDetailsScreen({super.key, required this.application});
 
   @override
-  State<ApplicationDetailsScreen> createState() => _ApplicationDetailsScreenState();
+  State<ApplicationDetailsScreen> createState() =>
+      _ApplicationDetailsScreenState();
 }
 
 class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
+  // Track whether rejected application has been edited.
   bool _hasEditedRejectedApplication = false;
 
   @override
   void initState() {
     super.initState();
+
+    // Load supporting data after first frame.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<BoothProvider>().fetchBoothPackages(widget.application.exhibitionId);
+      context
+          .read<BoothProvider>()
+          .fetchBoothPackages(widget.application.exhibitionId);
       context.read<UserProvider>().fetchAllUsers();
-      context.read<BoothSpotProvider>().fetchBoothSpots(widget.application.exhibitionId);
+      context
+          .read<BoothSpotProvider>()
+          .fetchBoothSpots(widget.application.exhibitionId);
       context.read<ExhibitionProvider>().fetchAllExhibitions();
     });
   }
@@ -48,8 +57,8 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
     final authProvider = context.watch<AuthProvider>();
     final applicationProvider = context.watch<ApplicationProvider>();
     final user = authProvider.currentUser;
-    
-    // Find latest application data from provider to stay reactive
+
+    // Get latest application data from provider.
     final latestApp = applicationProvider.allApplications.firstWhere(
       (a) => a.id == widget.application.id,
       orElse: () => applicationProvider.userApplications.firstWhere(
@@ -65,7 +74,7 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
     final spotProvider = context.watch<BoothSpotProvider>();
     final userProvider = context.watch<UserProvider>();
 
-    // Resolve booth spot model
+    // Resolve selected booth spot.
     final spot = spotProvider.boothSpots.firstWhere(
       (s) => s.id == latestApp.boothSpotId,
       orElse: () => BoothSpotModel(
@@ -77,13 +86,16 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
       ),
     );
 
-    // Resolve package model using boothSpot's boothPackageId
+    // Resolve booth package from selected spot.
     final BoothModel? package = spot.boothPackageId.isNotEmpty
-        ? boothProvider.boothPackages.where((p) => p.id == spot.boothPackageId).firstOrNull
+        ? boothProvider.boothPackages
+            .where((p) => p.id == spot.boothPackageId)
+            .firstOrNull
         : null;
 
-    // Resolve applicant user
-    final applicantUser = userProvider.users.where((u) => u.uid == latestApp.userId).firstOrNull;
+    // Resolve applicant and exhibition details.
+    final applicantUser =
+        userProvider.users.where((u) => u.uid == latestApp.userId).firstOrNull;
     final exhibitionProvider = context.watch<ExhibitionProvider>();
     final exhibition = exhibitionProvider.allExhibitions
         .where((e) => e.id == latestApp.exhibitionId)
@@ -91,10 +103,12 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
     final exhibitionName = exhibition?.name ?? 'Exhibition';
     final applicantName = applicantUser?.name ?? latestApp.companyName;
 
-    final bool canEdit = user != null && (
-      user.role == 'Admin' || 
-      (user.role == 'Exhibitor' && user.uid == latestApp.userId && latestApp.status == 'Pending')
-    );
+    // Allow edit for admin or pending owner.
+    final bool canEdit = user != null &&
+        (user.role == 'Admin' ||
+            (user.role == 'Exhibitor' &&
+                user.uid == latestApp.userId &&
+                latestApp.status == 'Pending'));
 
     final bool isOrganizer = user?.role == 'Organizer';
     final bool isAdmin = user?.role == 'Admin';
@@ -120,6 +134,7 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
                           application: latestApp,
                         ),
                       );
+
                       if (edited == true && mounted) {
                         setState(() {
                           _hasEditedRejectedApplication = true;
@@ -135,218 +150,248 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
                 behavior: _NoOverscrollBehavior(),
                 child: SingleChildScrollView(
                   physics: const ClampingScrollPhysics(),
-                padding: const EdgeInsets.only(
-                  left: 20,
-                  right: 20,
-                  top: 16,
-                  bottom: 120,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // A. Top Summary Card
-                    _buildTopSummaryCard(latestApp, exhibitionName, applicantName),
-
-                    // B. Conditional Alert Banners
-                    _buildAlertBanner(latestApp),
-
-                    // C. Applicant Information Section
-                    _buildDetailsSectionHeader('APPLICANT INFORMATION'),
-                    _buildDataCard([
-                      _buildInfoRow(
-                        label: 'Company Name',
-                        value: latestApp.companyName,
-                        showDivider: true,
+                  padding: const EdgeInsets.only(
+                    left: 20,
+                    right: 20,
+                    top: 16,
+                    bottom: 120,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Show application summary.
+                      _buildTopSummaryCard(
+                        latestApp,
+                        exhibitionName,
+                        applicantName,
                       ),
-                      _buildInfoRow(
-                        label: 'Business Type',
-                        value: latestApp.businessType,
-                        showDivider: true,
-                      ),
-                      _buildInfoRow(
-                        label: 'Applied By',
-                        value: applicantName,
-                        showDivider: false,
-                      ),
-                    ]),
 
-                    // D. Contact Information Section
-                    if (applicantUser != null) ...[
-                      _buildDetailsSectionHeader('CONTACT INFORMATION'),
+                      // Show status alert when needed.
+                      _buildAlertBanner(latestApp),
+
+                      // Show applicant information.
+                      _buildDetailsSectionHeader('APPLICANT INFORMATION'),
                       _buildDataCard([
                         _buildInfoRow(
-                          label: 'Contact Person',
-                          value: applicantUser.name,
+                          label: 'Company Name',
+                          value: latestApp.companyName,
                           showDivider: true,
                         ),
                         _buildInfoRow(
-                          label: 'Email Address',
-                          value: applicantUser.email,
+                          label: 'Business Type',
+                          value: latestApp.businessType,
+                          showDivider: true,
+                        ),
+                        _buildInfoRow(
+                          label: 'Applied By',
+                          value: applicantName,
                           showDivider: false,
                         ),
                       ]),
-                    ],
 
-                    // E. Exhibit Information Section
-                    _buildDetailsSectionHeader('EXHIBIT DETAILS'),
-                    _buildDataCard([
-                      _buildInfoRow(
-                        label: 'Product / Service Name',
-                        value: latestApp.productName,
-                        showDivider: true,
-                      ),
-                      _buildInfoRow(
-                        label: 'Description',
-                        value: latestApp.description,
-                        showDivider: true,
-                      ),
-                      _buildInfoRow(
-                        label: 'Exhibition',
-                        value: exhibitionName,
-                        showDivider: false,
-                      ),
-                    ]),
-
-                    // F. Booth Details Section
-                    _buildDetailsSectionHeader('BOOTH DETAILS'),
-                    _buildDataCard([
-                      _buildInfoRow(
-                        label: 'Booth Spot',
-                        value: 'Booth ${latestApp.boothNumber}',
-                        showDivider: true,
-                      ),
-                      if (package != null) ...[
-                        _buildInfoRow(
-                          label: 'Package Name',
-                          value: package.name,
-                          showDivider: true,
-                        ),
-                        _buildInfoRow(
-                          label: 'Size',
-                          value: package.size,
-                          showDivider: true,
-                        ),
-                        _buildInfoRow(
-                          label: 'Price',
-                          value: 'RM ${package.price.toStringAsFixed(0)}',
-                          showDivider: true,
-                        ),
+                      // Show applicant contact details.
+                      if (applicantUser != null) ...[
+                        _buildDetailsSectionHeader('CONTACT INFORMATION'),
+                        _buildDataCard([
+                          _buildInfoRow(
+                            label: 'Contact Person',
+                            value: applicantUser.name,
+                            showDivider: true,
+                          ),
+                          _buildInfoRow(
+                            label: 'Email Address',
+                            value: applicantUser.email,
+                            showDivider: false,
+                          ),
+                        ]),
                       ],
-                      _buildInfoRow(
-                        label: 'Participation Period',
-                        value: (latestApp.participationStartDate != null && latestApp.participationEndDate != null)
-                            ? '${DateFormatHelper.formatDate(latestApp.participationStartDate!)} - ${DateFormatHelper.formatDate(latestApp.participationEndDate!)}'
-                            : 'Full Event Duration',
-                        showDivider: false,
-                      ),
-                    ]),
 
-                    // G. Included Amenities Section
-                    _buildDetailsSectionHeader('INCLUDED AMENITIES'),
-                    _buildDataCard([
-                      if (package == null || package.amenities.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Text(
-                            'No included amenities listed',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey.shade400,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        )
-                      else
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: package.amenities.map((a) {
-                            return Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade50,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.grey.shade200, width: 0.8),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.check, size: 14, color: Colors.green.shade600),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    a,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.grey.shade700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
+                      // Show exhibit details.
+                      _buildDetailsSectionHeader('EXHIBIT DETAILS'),
+                      _buildDataCard([
+                        _buildInfoRow(
+                          label: 'Product / Service Name',
+                          value: latestApp.productName,
+                          showDivider: true,
                         ),
-                    ]),
+                        _buildInfoRow(
+                          label: 'Description',
+                          value: latestApp.description,
+                          showDivider: true,
+                        ),
+                        _buildInfoRow(
+                          label: 'Exhibition',
+                          value: exhibitionName,
+                          showDivider: false,
+                        ),
+                      ]),
 
-                    // H. Additional Requirements Section
-                    _buildDetailsSectionHeader('ADDITIONAL REQUIREMENTS'),
-                    _buildDataCard([
-                      if (latestApp.requirements.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Text(
-                            'No additional requirements',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey.shade400,
-                              fontStyle: FontStyle.italic,
-                            ),
+                      // Show booth details.
+                      _buildDetailsSectionHeader('BOOTH DETAILS'),
+                      _buildDataCard([
+                        _buildInfoRow(
+                          label: 'Booth Spot',
+                          value: 'Booth ${latestApp.boothNumber}',
+                          showDivider: true,
+                        ),
+                        if (package != null) ...[
+                          _buildInfoRow(
+                            label: 'Package Name',
+                            value: package.name,
+                            showDivider: true,
                           ),
-                        )
-                      else
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: latestApp.requirements.map((r) {
-                            return Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: AppColors.primaryAccent.withValues(alpha: 0.05),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: AppColors.primaryAccent.withValues(alpha: 0.15), width: 0.8),
+                          _buildInfoRow(
+                            label: 'Size',
+                            value: package.size,
+                            showDivider: true,
+                          ),
+                          _buildInfoRow(
+                            label: 'Price',
+                            value: 'RM ${package.price.toStringAsFixed(0)}',
+                            showDivider: true,
+                          ),
+                        ],
+                        _buildInfoRow(
+                          label: 'Participation Period',
+                          value: (latestApp.participationStartDate != null &&
+                                  latestApp.participationEndDate != null)
+                              ? '${DateFormatHelper.formatDate(latestApp.participationStartDate!)} - ${DateFormatHelper.formatDate(latestApp.participationEndDate!)}'
+                              : 'Full Event Duration',
+                          showDivider: false,
+                        ),
+                      ]),
+
+                      // Show included amenities.
+                      _buildDetailsSectionHeader('INCLUDED AMENITIES'),
+                      _buildDataCard([
+                        if (package == null || package.amenities.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Text(
+                              'No included amenities listed',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey.shade400,
+                                fontStyle: FontStyle.italic,
                               ),
-                              child: Text(
-                                r,
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.primaryAccent,
+                            ),
+                          )
+                        else
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: package.amenities.map((a) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
                                 ),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade50,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.grey.shade200,
+                                    width: 0.8,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.check,
+                                      size: 14,
+                                      color: Colors.green.shade600,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      a,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.grey.shade700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                      ]),
+
+                      // Show additional requirements.
+                      _buildDetailsSectionHeader('ADDITIONAL REQUIREMENTS'),
+                      _buildDataCard([
+                        if (latestApp.requirements.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Text(
+                              'No additional requirements',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey.shade400,
+                                fontStyle: FontStyle.italic,
                               ),
-                            );
-                          }).toList(),
-                        ),
-                    ]),
+                            ),
+                          )
+                        else
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: latestApp.requirements.map((r) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryAccent
+                                      .withValues(alpha: 0.05),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: AppColors.primaryAccent
+                                        .withValues(alpha: 0.15),
+                                    width: 0.8,
+                                  ),
+                                ),
+                                child: Text(
+                                  r,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.primaryAccent,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                      ]),
 
-                    // H.2 Payment Information Section (Only if status is Paid)
-                    if (latestApp.status == 'Paid') ...[
-                      _buildDetailsSectionHeader('PAYMENT INFORMATION'),
-                      _buildPaymentInfoCard(latestApp),
-                    ],
+                      // Show payment details after payment.
+                      if (latestApp.status == 'Paid') ...[
+                        _buildDetailsSectionHeader('PAYMENT INFORMATION'),
+                        _buildPaymentInfoCard(latestApp),
+                      ],
 
-                    // I. Technical Debug Info Section (Admin Only)
-                    if (isAdmin) ...[
-                      _buildDetailsSectionHeader('ADMIN CONTEXT'),
-                      _buildAdminDebugCard(latestApp),
+                      // Show admin-only context.
+                      if (isAdmin) ...[
+                        _buildDetailsSectionHeader('ADMIN CONTEXT'),
+                        _buildAdminDebugCard(latestApp),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             ),
-          ),
+
+            // Show organizer/admin review actions.
             if (isPending && (isOrganizer || isAdmin))
               _buildBottomActionContainer(context, user, latestApp),
-            if (!isOrganizer && !isAdmin && user != null && latestApp.userId == user.uid) ...[
+
+            // Show exhibitor actions.
+            if (!isOrganizer &&
+                !isAdmin &&
+                user != null &&
+                latestApp.userId == user.uid) ...[
               if (latestApp.status == 'Pending')
                 _buildExhibitorCancelContainer(context, user, latestApp),
               if (latestApp.status == 'Approved')
@@ -375,8 +420,13 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
     );
   }
 
-  Widget _buildTopSummaryCard(ApplicationModel app, String exhibitionName, String applicantName) {
-    final String appliedDate = app.createdAt != null ? DateFormatHelper.formatDate(app.createdAt!) : 'N/A';
+  Widget _buildTopSummaryCard(
+    ApplicationModel app,
+    String exhibitionName,
+    String applicantName,
+  ) {
+    final String appliedDate =
+        app.createdAt != null ? DateFormatHelper.formatDate(app.createdAt!) : 'N/A';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
@@ -396,7 +446,7 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top Row: Company Name & Status Badge aligned beautifully
+          // Show company name and status.
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -418,8 +468,6 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
               StatusBadge(label: app.status),
             ],
           ),
-          
-          // Second line: Business Type
           const SizedBox(height: 4),
           Text(
             app.businessType,
@@ -429,11 +477,7 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
               fontWeight: FontWeight.w500,
             ),
           ),
-          
-          // Gap before the metadata block
           const SizedBox(height: 16),
-          
-          // Metadata block: Exhibition Name & Compact Applied By / Date Info
           Text(
             exhibitionName,
             style: const TextStyle(
@@ -457,7 +501,10 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
   }
 
   Widget _buildAlertBanner(ApplicationModel app) {
-    if (app.status == 'Rejected' && app.rejectReason != null && app.rejectReason!.isNotEmpty) {
+    // Show rejection reason.
+    if (app.status == 'Rejected' &&
+        app.rejectReason != null &&
+        app.rejectReason!.isNotEmpty) {
       return Container(
         margin: const EdgeInsets.only(bottom: 20),
         width: double.infinity,
@@ -470,7 +517,11 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.info_outline_rounded, size: 20, color: Colors.red.shade700),
+            Icon(
+              Icons.info_outline_rounded,
+              size: 20,
+              color: Colors.red.shade700,
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
@@ -501,7 +552,8 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
         ),
       );
     }
-    
+
+    // Show pending review notice.
     if (app.status == 'Pending') {
       return Container(
         margin: const EdgeInsets.only(bottom: 20),
@@ -515,7 +567,11 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.hourglass_empty_rounded, size: 20, color: Colors.amber.shade700),
+            Icon(
+              Icons.hourglass_empty_rounded,
+              size: 20,
+              color: Colors.amber.shade700,
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
@@ -546,7 +602,7 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
         ),
       );
     }
-    
+
     return const SizedBox.shrink();
   }
 
@@ -608,7 +664,8 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
                       style: TextStyle(
                         fontSize: 14.5,
                         fontWeight: FontWeight.w600,
-                        color: hasValue ? AppColors.primaryText : Colors.grey.shade400,
+                        color:
+                            hasValue ? AppColors.primaryText : Colors.grey.shade400,
                         height: 1.3,
                       ),
                     ),
@@ -645,7 +702,11 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
         children: [
           Row(
             children: [
-              Icon(Icons.admin_panel_settings_outlined, size: 16, color: Colors.grey.shade600),
+              Icon(
+                Icons.admin_panel_settings_outlined,
+                size: 16,
+                color: Colors.grey.shade600,
+              ),
               const SizedBox(width: 8),
               Text(
                 'TECHNICAL DETAILS',
@@ -659,16 +720,29 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          _buildInfoRow(label: 'Exhibition ID', value: app.exhibitionId, showDivider: true),
-          _buildInfoRow(label: 'User ID', value: app.userId, showDivider: true),
-          _buildInfoRow(label: 'Booth Spot ID', value: app.boothSpotId, showDivider: false),
+          _buildInfoRow(
+            label: 'Exhibition ID',
+            value: app.exhibitionId,
+            showDivider: true,
+          ),
+          _buildInfoRow(
+            label: 'User ID',
+            value: app.userId,
+            showDivider: true,
+          ),
+          _buildInfoRow(
+            label: 'Booth Spot ID',
+            value: app.boothSpotId,
+            showDivider: false,
+          ),
         ],
       ),
     );
   }
 
   Widget _buildPaymentInfoCard(ApplicationModel app) {
-    final paidDateStr = app.paidAt != null ? DateFormatHelper.formatDateTime(app.paidAt!) : 'N/A';
+    final paidDateStr =
+        app.paidAt != null ? DateFormatHelper.formatDateTime(app.paidAt!) : 'N/A';
 
     return _buildDataCard([
       _buildInfoRow(
@@ -689,7 +763,11 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
     ]);
   }
 
-  Widget _buildExhibitorCancelContainer(BuildContext context, dynamic user, ApplicationModel app) {
+  Widget _buildExhibitorCancelContainer(
+    BuildContext context,
+    dynamic user,
+    ApplicationModel app,
+  ) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -726,7 +804,11 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
     );
   }
 
-  Widget _buildExhibitorPaymentContainer(BuildContext context, dynamic user, ApplicationModel app) {
+  Widget _buildExhibitorPaymentContainer(
+    BuildContext context,
+    dynamic user,
+    ApplicationModel app,
+  ) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -760,6 +842,7 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
                 context: context,
                 builder: (context) => PaymentDialog(application: app),
               );
+
               if (paid == true && context.mounted) {
                 FeedbackHelper.showSuccess(
                   context,
@@ -773,7 +856,11 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
     );
   }
 
-  Widget _buildExhibitorResubmitContainer(BuildContext context, dynamic user, ApplicationModel app) {
+  Widget _buildExhibitorResubmitContainer(
+    BuildContext context,
+    dynamic user,
+    ApplicationModel app,
+  ) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -810,6 +897,7 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
                 );
                 return;
               }
+
               _handleResubmit(context, app);
             },
           ),
@@ -821,10 +909,12 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
   void _handleCancel(BuildContext context, ApplicationModel app) async {
     final provider = context.read<ApplicationProvider>();
 
+    // Confirm before cancelling application.
     final confirm = await BaseDialog.show<bool>(
       context: context,
       title: 'Cancel Application?',
-      message: 'Are you sure you want to cancel this application? This action cannot be undone.',
+      message:
+          'Are you sure you want to cancel this application? This action cannot be undone.',
       variant: DialogVariant.warning,
       primaryLabel: 'Cancel Application',
       secondaryLabel: 'Keep Application',
@@ -842,6 +932,7 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
 
     if (success) {
       await provider.fetchUserApplications(app.userId);
+
       if (context.mounted) {
         FeedbackHelper.showSuccess(
           context,
@@ -862,11 +953,10 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
     final provider = context.read<ApplicationProvider>();
     final spotProvider = context.read<BoothSpotProvider>();
 
-    // Safety check first
+    // Check latest booth availability.
     await spotProvider.fetchBoothSpots(app.exhibitionId);
-    final latestSpot = spotProvider.boothSpots
-        .where((s) => s.id == app.boothSpotId)
-        .firstOrNull;
+    final latestSpot =
+        spotProvider.boothSpots.where((s) => s.id == app.boothSpotId).firstOrNull;
 
     if (latestSpot == null || latestSpot.status != 'Available') {
       if (context.mounted) {
@@ -878,18 +968,17 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
       return;
     }
 
-    // Prepare resubmitted application details
+    // Prepare application for resubmission.
     final resubmittedApp = app.copyWith(
       status: 'Pending',
       rejectReason: '',
       createdAt: DateTime.now(),
     );
 
-    // Call updateApplication to update Firestore
     final success = await provider.updateApplication(resubmittedApp);
 
     if (success) {
-      // Update booth spot status to Pending
+      // Mark booth spot as pending.
       await spotProvider.updateBoothSpotStatus(
         app.boothSpotId,
         'Pending',
@@ -897,7 +986,7 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
       );
 
       setState(() {
-        _hasEditedRejectedApplication = false; // Reset local state tracking
+        _hasEditedRejectedApplication = false;
       });
 
       if (context.mounted) {
@@ -916,7 +1005,11 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
     }
   }
 
-  Widget _buildBottomActionContainer(BuildContext context, dynamic user, ApplicationModel app) {
+  Widget _buildBottomActionContainer(
+    BuildContext context,
+    dynamic user,
+    ApplicationModel app,
+  ) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -970,12 +1063,14 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
     BaseDialog.show(
       context: context,
       title: 'Approve Application?',
-      message: 'This will approve the application and reserve the selected booth for the applicant.',
+      message:
+          'This will approve the application and reserve the selected booth for the applicant.',
       variant: DialogVariant.info,
       primaryLabel: 'Approve',
       secondaryLabel: 'Cancel',
       onPrimaryPressed: () async {
-        Navigator.pop(context); // Close confirmation dialog
+        Navigator.pop(context);
+
         final provider = context.read<ApplicationProvider>();
         final success = await provider.updateApplicationStatus(
           applicationId: app.id,
@@ -1008,7 +1103,8 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
         title: 'Reject Application',
         subtitle: 'Please provide a reason for rejecting this application.',
         onConfirm: (reason) async {
-          final provider = Provider.of<ApplicationProvider>(context, listen: false);
+          final provider =
+              Provider.of<ApplicationProvider>(context, listen: false);
           final success = await provider.updateApplicationStatus(
             applicationId: app.id,
             boothSpotId: app.boothSpotId,
@@ -1036,6 +1132,7 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
   }
 }
 
+// Remove overscroll glow effect.
 class _NoOverscrollBehavior extends ScrollBehavior {
   @override
   Widget buildOverscrollIndicator(

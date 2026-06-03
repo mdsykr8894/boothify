@@ -3,6 +3,7 @@ import '../constants/app_colors.dart';
 import '../constants/app_radius.dart';
 import '../constants/app_spacing.dart';
 
+// Reusable status badge.
 class StatusBadge extends StatelessWidget {
   final String label;
   final Color? color;
@@ -14,6 +15,7 @@ class StatusBadge extends StatelessWidget {
   });
 
   static Color getStatusColor(String status) {
+    // Match status text with badge color.
     switch (status.toLowerCase()) {
       case 'pending':
       case 'draft':

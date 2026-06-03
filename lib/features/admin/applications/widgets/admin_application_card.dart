@@ -12,6 +12,7 @@ import '../../../../providers/user_provider.dart';
 import '../../../shared/applications/widgets/reject_application_dialog.dart';
 import '../../../../core/utils/feedback_helper.dart';
 
+// Display single application card for admin.
 class AdminApplicationCard extends StatelessWidget {
   final ApplicationModel application;
 
@@ -24,7 +25,12 @@ class AdminApplicationCard extends StatelessWidget {
         title: 'Reject Application',
         subtitle: 'Please provide a reason for rejecting this application.',
         onConfirm: (reason) async {
-          final provider = Provider.of<ApplicationProvider>(context, listen: false);
+          final provider = Provider.of<ApplicationProvider>(
+            context,
+            listen: false,
+          );
+
+          // Reject application through provider.
           final success = await provider.updateApplicationStatus(
             applicationId: application.id,
             boothSpotId: application.boothSpotId,
@@ -34,7 +40,10 @@ class AdminApplicationCard extends StatelessWidget {
 
           if (context.mounted) {
             if (success) {
-              FeedbackHelper.showSuccess(context, 'Application rejected (Admin)');
+              FeedbackHelper.showSuccess(
+                context,
+                'Application rejected (Admin)',
+              );
             } else {
               FeedbackHelper.showError(context, 'Rejection failed');
             }
@@ -48,18 +57,28 @@ class AdminApplicationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isPending = application.status == 'Pending';
 
-    // In-memory lookup: exhibition name
     final exhibitionProvider = context.watch<ExhibitionProvider>();
-    final exhibition = exhibitionProvider.allExhibitions.any((e) => e.id == application.exhibitionId)
-        ? exhibitionProvider.allExhibitions.firstWhere((e) => e.id == application.exhibitionId)
+
+    // Resolve exhibition name from provider.
+    final exhibition =
+        exhibitionProvider.allExhibitions.any(
+          (e) => e.id == application.exhibitionId,
+        )
+        ? exhibitionProvider.allExhibitions.firstWhere(
+            (e) => e.id == application.exhibitionId,
+          )
         : null;
+
     final String exhibitionName = exhibition?.name ?? application.exhibitionId;
 
-    // In-memory lookup: applicant's real name from UserProvider
     final userProvider = context.watch<UserProvider>();
-    final applicantUser = userProvider.users.any((u) => u.uid == application.userId)
+
+    // Resolve applicant name from provider.
+    final applicantUser =
+        userProvider.users.any((u) => u.uid == application.userId)
         ? userProvider.users.firstWhere((u) => u.uid == application.userId)
         : null;
+
     final String applicantName = applicantUser?.name.isNotEmpty == true
         ? applicantUser!.name
         : application.companyName;
@@ -84,13 +103,13 @@ class AdminApplicationCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Top content area ──────────────────────────────────────
+            // Show main application info.
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Row 1: Applicant Company Name + Status Badge
+                  // Show company name and status.
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
@@ -114,7 +133,7 @@ class AdminApplicationCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
 
-                  // Row 2: Business Type
+                  // Show business type.
                   Text(
                     application.businessType,
                     style: TextStyle(
@@ -127,11 +146,10 @@ class AdminApplicationCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
 
-                  // ── 2-column info section ───────────────────────────
+                  // Show booth and applicant metadata.
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // LEFT: Decorative thumbnail box
                       Container(
                         width: 96,
                         height: 96,
@@ -146,8 +164,6 @@ class AdminApplicationCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 20),
-
-                      // RIGHT: 3 compact metadata rows
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -176,13 +192,17 @@ class AdminApplicationCard extends StatelessWidget {
               ),
             ),
 
-            // ── Rejection reason alert ─────────────────────────────────
-            if (application.rejectReason != null && application.status == 'Rejected') ...[
+            // Show rejection reason.
+            if (application.rejectReason != null &&
+                application.status == 'Rejected') ...[
               Padding(
                 padding: const EdgeInsets.only(left: 20, right: 20, bottom: 16),
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.red.shade50,
                     borderRadius: BorderRadius.circular(12),
@@ -191,7 +211,11 @@ class AdminApplicationCard extends StatelessWidget {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.info_outline_rounded, size: 15, color: Colors.red.shade700),
+                      Icon(
+                        Icons.info_outline_rounded,
+                        size: 15,
+                        color: Colors.red.shade700,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -210,10 +234,9 @@ class AdminApplicationCard extends StatelessWidget {
               ),
             ],
 
-            // ── Divider ───────────────────────────────────────────────
             Divider(height: 1, color: Colors.grey.shade100),
 
-            // ── Action buttons ────────────────────────────────────────
+            // Show card action buttons.
             Padding(
               padding: const EdgeInsets.all(20.0),
               child: _buildActionButtons(context, isPending),
@@ -253,21 +276,19 @@ class AdminApplicationCard extends StatelessWidget {
           ),
         ],
       );
-    } else {
-      return SizedBox(
-        width: double.infinity,
-        child: AppButton(
-          text: 'View Details',
-          color: AppColors.primaryText,
-          height: 50,
-          borderRadius: 12,
-          onPressed: () => context.push(
-            AppRoutes.applicationDetails,
-            extra: application,
-          ),
-        ),
-      );
     }
+
+    return SizedBox(
+      width: double.infinity,
+      child: AppButton(
+        text: 'View Details',
+        color: AppColors.primaryText,
+        height: 50,
+        borderRadius: 12,
+        onPressed: () =>
+            context.push(AppRoutes.applicationDetails, extra: application),
+      ),
+    );
   }
 
   Widget _buildMetaRow(IconData icon, String text) {

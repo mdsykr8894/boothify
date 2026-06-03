@@ -12,6 +12,7 @@ import '../../../providers/auth_provider.dart';
 import '../../../providers/exhibition_provider.dart';
 import '../../../core/utils/feedback_helper.dart';
 
+// Form screen for creating a new exhibition.
 class CreateExhibitionScreen extends StatefulWidget {
   const CreateExhibitionScreen({super.key});
 
@@ -30,19 +31,27 @@ class _CreateExhibitionScreenState extends State<CreateExhibitionScreen> {
 
   Future<void> _pickImages() async {
     if (_selectedImages.length >= 4) {
-      FeedbackHelper.showWarning(context, 'You can upload up to 4 images only.');
+      FeedbackHelper.showWarning(
+        context,
+        'You can upload up to 4 images only.',
+      );
       return;
     }
 
     try {
+      // Pick multiple exhibition images.
       final List<XFile> pickedFiles = await _picker.pickMultiImage();
+
       if (pickedFiles.isNotEmpty) {
         setState(() {
           for (var file in pickedFiles) {
             if (_selectedImages.length < 4) {
               _selectedImages.add(file);
             } else {
-              FeedbackHelper.showWarning(context, 'You can upload up to 4 images only.');
+              FeedbackHelper.showWarning(
+                context,
+                'You can upload up to 4 images only.',
+              );
               break;
             }
           }
@@ -54,6 +63,7 @@ class _CreateExhibitionScreenState extends State<CreateExhibitionScreen> {
   }
 
   void _removeImage(int index) {
+    // Remove selected image preview.
     setState(() {
       _selectedImages.removeAt(index);
     });
@@ -73,11 +83,7 @@ class _CreateExhibitionScreenState extends State<CreateExhibitionScreen> {
     'Other',
   ];
 
-  static const List<String> _eventTypes = [
-    'Indoor',
-    'Outdoor',
-    'Hybrid',
-  ];
+  static const List<String> _eventTypes = ['Indoor', 'Outdoor', 'Hybrid'];
 
   String? _selectedCategory;
   String? _selectedEventType;
@@ -89,6 +95,7 @@ class _CreateExhibitionScreenState extends State<CreateExhibitionScreen> {
     final DateTime initialDate;
     final DateTime firstDate;
 
+    // Prepare start or end date picker range.
     if (isStart) {
       initialDate = _startDate ?? today;
       firstDate = today;
@@ -105,6 +112,7 @@ class _CreateExhibitionScreenState extends State<CreateExhibitionScreen> {
       lastDate: today.add(const Duration(days: 365 * 2)),
       builder: (BuildContext context, Widget? child) {
         return Theme(
+          // Apply app date picker styling.
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
               primary: AppColors.primaryAccent,
@@ -132,11 +140,13 @@ class _CreateExhibitionScreenState extends State<CreateExhibitionScreen> {
         );
       },
     );
+
     if (picked != null) {
       setState(() {
         if (isStart) {
           _startDate = picked;
-          // Reset end date if it's before new start date
+
+          // Reset end date when it becomes invalid.
           if (_endDate != null && _endDate!.isBefore(_startDate!)) {
             _endDate = null;
           }
@@ -149,13 +159,22 @@ class _CreateExhibitionScreenState extends State<CreateExhibitionScreen> {
 
   void _handleCreate() async {
     if (!_formKey.currentState!.validate()) return;
+
+    // Require both event dates.
     if (_startDate == null || _endDate == null) {
-      FeedbackHelper.showWarning(context, 'Please select both start and end dates');
+      FeedbackHelper.showWarning(
+        context,
+        'Please select both start and end dates',
+      );
       return;
     }
 
+    // Validate event date order.
     if (_endDate!.isBefore(_startDate!)) {
-      FeedbackHelper.showWarning(context, 'End date cannot be before start date');
+      FeedbackHelper.showWarning(
+        context,
+        'End date cannot be before start date',
+      );
       return;
     }
 
@@ -165,8 +184,9 @@ class _CreateExhibitionScreenState extends State<CreateExhibitionScreen> {
 
     if (organizerId == null) return;
 
+    // Build new exhibition model.
     final newExhibition = ExhibitionModel(
-      id: '', // Will be set by Firestore
+      id: '',
       organizerId: organizerId,
       name: _nameController.text.trim(),
       location: _locationController.text.trim(),
@@ -183,6 +203,7 @@ class _CreateExhibitionScreenState extends State<CreateExhibitionScreen> {
       expectedVisitors: '',
     );
 
+    // Create exhibition through provider.
     final success = await exhibitionProvider.createExhibition(
       newExhibition,
       selectedImages: _selectedImages,
@@ -193,8 +214,12 @@ class _CreateExhibitionScreenState extends State<CreateExhibitionScreen> {
         if (exhibitionProvider.errorMessage != null) {
           FeedbackHelper.showError(context, exhibitionProvider.errorMessage!);
         } else {
-          FeedbackHelper.showSuccess(context, 'Exhibition created successfully!');
+          FeedbackHelper.showSuccess(
+            context,
+            'Exhibition created successfully!',
+          );
         }
+
         context.pop();
       } else {
         FeedbackHelper.showError(
@@ -280,7 +305,10 @@ class _CreateExhibitionScreenState extends State<CreateExhibitionScreen> {
               fontSize: 15,
               fontWeight: FontWeight.w400,
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 18,
+            ),
             fillColor: Colors.white,
             filled: true,
             enabledBorder: OutlineInputBorder(
@@ -290,7 +318,9 @@ class _CreateExhibitionScreenState extends State<CreateExhibitionScreen> {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide(
-                color: isAccentFocus ? AppColors.primaryAccent : AppColors.primaryText,
+                color: isAccentFocus
+                    ? AppColors.primaryAccent
+                    : AppColors.primaryText,
                 width: 1.5,
               ),
             ),
@@ -339,14 +369,14 @@ class _CreateExhibitionScreenState extends State<CreateExhibitionScreen> {
             ),
           ),
           items: items.map((item) {
-            return DropdownMenuItem(
-              value: item,
-              child: Text(item),
-            );
+            return DropdownMenuItem(value: item, child: Text(item));
           }).toList(),
           onChanged: onChanged,
           validator: validator,
-          icon: Icon(Icons.keyboard_arrow_down_rounded, color: Colors.grey.shade400),
+          icon: Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: Colors.grey.shade400,
+          ),
           dropdownColor: Colors.white,
           borderRadius: BorderRadius.circular(16),
           style: const TextStyle(
@@ -355,7 +385,10 @@ class _CreateExhibitionScreenState extends State<CreateExhibitionScreen> {
             color: AppColors.primaryText,
           ),
           decoration: InputDecoration(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 18,
+            ),
             fillColor: Colors.white,
             filled: true,
             enabledBorder: OutlineInputBorder(
@@ -364,7 +397,10 @@ class _CreateExhibitionScreenState extends State<CreateExhibitionScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: AppColors.primaryText, width: 1.5),
+              borderSide: const BorderSide(
+                color: AppColors.primaryText,
+                width: 1.5,
+              ),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
@@ -388,6 +424,7 @@ class _CreateExhibitionScreenState extends State<CreateExhibitionScreen> {
   }) {
     return Expanded(
       child: InkWell(
+        // Open date picker.
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Container(
@@ -419,7 +456,9 @@ class _CreateExhibitionScreenState extends State<CreateExhibitionScreen> {
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: date == null ? Colors.grey.shade400 : AppColors.primaryText,
+                        color: date == null
+                            ? Colors.grey.shade400
+                            : AppColors.primaryText,
                       ),
                     ),
                   ],
@@ -428,7 +467,9 @@ class _CreateExhibitionScreenState extends State<CreateExhibitionScreen> {
               Icon(
                 Icons.calendar_today_outlined,
                 size: 18,
-                color: date == null ? Colors.grey.shade400 : AppColors.primaryAccent,
+                color: date == null
+                    ? Colors.grey.shade400
+                    : AppColors.primaryAccent,
               ),
             ],
           ),
@@ -453,7 +494,9 @@ class _CreateExhibitionScreenState extends State<CreateExhibitionScreen> {
             ),
             Expanded(
               child: ScrollConfiguration(
-                behavior: ScrollConfiguration.of(context).copyWith(overscroll: false),
+                behavior: ScrollConfiguration.of(
+                  context,
+                ).copyWith(overscroll: false),
                 child: SingleChildScrollView(
                   physics: const ClampingScrollPhysics(),
                   padding: const EdgeInsets.symmetric(
@@ -465,6 +508,7 @@ class _CreateExhibitionScreenState extends State<CreateExhibitionScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Show basic event information fields.
                         _buildFormSection(
                           title: 'Basic Information',
                           children: [
@@ -472,14 +516,16 @@ class _CreateExhibitionScreenState extends State<CreateExhibitionScreen> {
                               controller: _nameController,
                               label: 'Exhibition Name',
                               hint: 'e.g. Startup Connect MY',
-                              validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                              validator: (v) =>
+                                  v == null || v.isEmpty ? 'Required' : null,
                             ),
                             const SizedBox(height: 20),
                             _buildTextField(
                               controller: _locationController,
                               label: 'Location',
                               hint: 'e.g. Convention Centre',
-                              validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                              validator: (v) =>
+                                  v == null || v.isEmpty ? 'Required' : null,
                             ),
                             const SizedBox(height: 20),
                             _buildDropdownField(
@@ -487,7 +533,8 @@ class _CreateExhibitionScreenState extends State<CreateExhibitionScreen> {
                               hint: 'Select category',
                               value: _selectedCategory,
                               items: _categories,
-                              onChanged: (val) => setState(() => _selectedCategory = val),
+                              onChanged: (val) =>
+                                  setState(() => _selectedCategory = val),
                               validator: (v) => v == null ? 'Required' : null,
                             ),
                             const SizedBox(height: 20),
@@ -496,10 +543,13 @@ class _CreateExhibitionScreenState extends State<CreateExhibitionScreen> {
                               hint: 'Select event type',
                               value: _selectedEventType,
                               items: _eventTypes,
-                              onChanged: (val) => setState(() => _selectedEventType = val),
+                              onChanged: (val) =>
+                                  setState(() => _selectedEventType = val),
                             ),
                           ],
                         ),
+
+                        // Show event date fields.
                         _buildFormSection(
                           title: 'Event Dates',
                           children: [
@@ -522,19 +572,25 @@ class _CreateExhibitionScreenState extends State<CreateExhibitionScreen> {
                             ),
                           ],
                         ),
+
+                        // Show event description field.
                         _buildFormSection(
                           title: 'Description',
                           children: [
                             _buildTextField(
                               controller: _descriptionController,
                               label: 'Details',
-                              hint: 'Tell exhibitors what this event is about...',
+                              hint:
+                                  'Tell exhibitors what this event is about...',
                               maxLines: 5,
-                              validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                              validator: (v) =>
+                                  v == null || v.isEmpty ? 'Required' : null,
                               isAccentFocus: true,
                             ),
                           ],
                         ),
+
+                        // Show event image upload section.
                         _buildFormSection(
                           title: 'Event Images',
                           children: [
@@ -543,7 +599,9 @@ class _CreateExhibitionScreenState extends State<CreateExhibitionScreen> {
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
-                                color: AppColors.primaryText.withValues(alpha: 0.6),
+                                color: AppColors.primaryText.withValues(
+                                  alpha: 0.6,
+                                ),
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -555,6 +613,8 @@ class _CreateExhibitionScreenState extends State<CreateExhibitionScreen> {
                               ),
                             ),
                             const SizedBox(height: 16),
+
+                            // Show selected image previews.
                             if (_selectedImages.isNotEmpty) ...[
                               SizedBox(
                                 height: 90,
@@ -564,18 +624,23 @@ class _CreateExhibitionScreenState extends State<CreateExhibitionScreen> {
                                   itemCount: _selectedImages.length,
                                   itemBuilder: (context, index) {
                                     final file = _selectedImages[index];
+
                                     return Container(
                                       margin: const EdgeInsets.only(right: 12),
                                       width: 90,
                                       height: 90,
                                       decoration: BoxDecoration(
                                         borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(color: Colors.grey.shade300),
+                                        border: Border.all(
+                                          color: Colors.grey.shade300,
+                                        ),
                                       ),
                                       child: Stack(
                                         children: [
                                           ClipRRect(
-                                            borderRadius: BorderRadius.circular(12),
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
                                             child: kIsWeb
                                                 ? Image.network(
                                                     file.path,
@@ -596,7 +661,9 @@ class _CreateExhibitionScreenState extends State<CreateExhibitionScreen> {
                                             child: GestureDetector(
                                               onTap: () => _removeImage(index),
                                               child: Container(
-                                                padding: const EdgeInsets.all(4),
+                                                padding: const EdgeInsets.all(
+                                                  4,
+                                                ),
                                                 decoration: const BoxDecoration(
                                                   color: Colors.black54,
                                                   shape: BoxShape.circle,
@@ -617,17 +684,26 @@ class _CreateExhibitionScreenState extends State<CreateExhibitionScreen> {
                               ),
                               const SizedBox(height: 16),
                             ],
+
+                            // Show add image button.
                             if (_selectedImages.length < 4)
                               SizedBox(
                                 width: double.infinity,
                                 child: OutlinedButton.icon(
                                   onPressed: _pickImages,
-                                  icon: const Icon(Icons.add_photo_alternate_outlined),
+                                  icon: const Icon(
+                                    Icons.add_photo_alternate_outlined,
+                                  ),
                                   label: const Text('Add Images'),
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: AppColors.primaryAccent,
-                                    side: const BorderSide(color: AppColors.primaryAccent, width: 1.5),
-                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    side: const BorderSide(
+                                      color: AppColors.primaryAccent,
+                                      width: 1.5,
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 16,
+                                    ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(16),
                                     ),
@@ -642,7 +718,8 @@ class _CreateExhibitionScreenState extends State<CreateExhibitionScreen> {
                 ),
               ),
             ),
-            // Sticky Bottom Action Bar
+
+            // Show create exhibition action.
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,

@@ -15,15 +15,21 @@ import '../../../providers/auth_provider.dart';
 import '../../../providers/exhibition_provider.dart';
 import '../../../providers/user_provider.dart';
 
+// Display organizer exhibition list.
 class OrganizerExhibitionsScreen extends StatefulWidget {
   const OrganizerExhibitionsScreen({super.key});
 
   @override
-  State<OrganizerExhibitionsScreen> createState() => _OrganizerExhibitionsScreenState();
+  State<OrganizerExhibitionsScreen> createState() =>
+      _OrganizerExhibitionsScreenState();
 }
 
-class _OrganizerExhibitionsScreenState extends State<OrganizerExhibitionsScreen> {
+class _OrganizerExhibitionsScreenState
+    extends State<OrganizerExhibitionsScreen> {
+  // Track selected exhibition filter.
   String _selectedFilter = 'All';
+
+  // Track last organizer data fetch.
   String? _lastFetchedUserId;
 
   @override
@@ -34,11 +40,16 @@ class _OrganizerExhibitionsScreenState extends State<OrganizerExhibitionsScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+
     final user = context.watch<AuthProvider>().currentUser;
+
+    // Reset fetch state when user logs out.
     if (user == null) {
       _lastFetchedUserId = null;
     } else if (user.uid != _lastFetchedUserId) {
       _lastFetchedUserId = user.uid;
+
+      // Fetch organizer exhibitions after first frame.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         _fetchExhibitions();
@@ -50,7 +61,9 @@ class _OrganizerExhibitionsScreenState extends State<OrganizerExhibitionsScreen>
     final authProvider = context.read<AuthProvider>();
     final exhibitionProvider = context.read<ExhibitionProvider>();
     final uid = authProvider.currentUser?.uid;
+
     if (uid != null) {
+      // Load organizer exhibitions and user lookup data.
       exhibitionProvider.fetchOrganizerExhibitions(uid);
       context.read<UserProvider>().fetchAllUsers();
     }
@@ -62,7 +75,7 @@ class _OrganizerExhibitionsScreenState extends State<OrganizerExhibitionsScreen>
     final allExhibitions = exhibitionProvider.organizerExhibitions;
     final isLoading = exhibitionProvider.isLoading;
 
-    // Filter exhibitions based on selection
+    // Filter exhibitions by selected status.
     final exhibitions = allExhibitions.where((e) {
       if (_selectedFilter == 'Published') return e.isPublished;
       if (_selectedFilter == 'Draft') return !e.isPublished;
@@ -77,13 +90,17 @@ class _OrganizerExhibitionsScreenState extends State<OrganizerExhibitionsScreen>
               title: 'Exhibition',
               actions: [
                 HeaderActionButton(
-                  onPressed: () => context.push(AppRoutes.organizerCreateExhibition),
+                  // Navigate to create exhibition screen.
+                  onPressed: () =>
+                      context.push(AppRoutes.organizerCreateExhibition),
                   icon: Icons.add,
                   iconColor: AppColors.primaryAccent,
                 ),
               ],
             ),
             const SizedBox(height: AppSpacing.s),
+
+            // Show exhibition status filters.
             AppFilterChips(
               selectedValue: _selectedFilter,
               filters: const ['All', 'Published', 'Draft'],
@@ -94,27 +111,32 @@ class _OrganizerExhibitionsScreenState extends State<OrganizerExhibitionsScreen>
               child: isLoading
                   ? const AppLoading()
                   : exhibitions.isEmpty
-                      ? const AppEmptyState(
-                          title: 'No Exhibitions',
-                          message: 'Your exhibitions will appear here after you create one.',
-                          icon: Icons.event_note,
-                        )
-                      : RefreshIndicator(
-                          onRefresh: () async => _fetchExhibitions(),
-                          child: ListView.builder(
-                            physics: const ClampingScrollPhysics(),
-                            padding: const EdgeInsets.only(
-                              left: AppSpacing.screenHorizontal,
-                              right: AppSpacing.screenHorizontal,
-                              top: AppSpacing.m,
-                              bottom: AppSpacing.s,
-                            ),
-                            itemCount: exhibitions.length,
-                            itemBuilder: (context, index) {
-                              return _OrganizerExhibitionCard(exhibition: exhibitions[index]);
-                            },
-                          ),
+                  ? const AppEmptyState(
+                      title: 'No Exhibitions',
+                      message:
+                          'Your exhibitions will appear here after you create one.',
+                      icon: Icons.event_note,
+                    )
+                  : RefreshIndicator(
+                      // Refresh organizer exhibitions.
+                      onRefresh: () async => _fetchExhibitions(),
+                      child: ListView.builder(
+                        physics: const ClampingScrollPhysics(),
+                        padding: const EdgeInsets.only(
+                          left: AppSpacing.screenHorizontal,
+                          right: AppSpacing.screenHorizontal,
+                          top: AppSpacing.m,
+                          bottom: AppSpacing.s,
                         ),
+                        itemCount: exhibitions.length,
+                        itemBuilder: (context, index) {
+                          // Show organizer exhibition card.
+                          return _OrganizerExhibitionCard(
+                            exhibition: exhibitions[index],
+                          );
+                        },
+                      ),
+                    ),
             ),
           ],
         ),
@@ -123,6 +145,7 @@ class _OrganizerExhibitionsScreenState extends State<OrganizerExhibitionsScreen>
   }
 }
 
+// Display single exhibition card for organizer.
 class _OrganizerExhibitionCard extends StatelessWidget {
   final ExhibitionModel exhibition;
 
@@ -130,22 +153,22 @@ class _OrganizerExhibitionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
-    // Try to get creator name using exact priority rules:
-    // 1. User document full name / name / displayName / username
-    // 2. User email
-    // 3. Role label only
-    // 4. 'Unknown organizer'
     final userProvider = context.watch<UserProvider>();
-    final creator = userProvider.users.any((u) => u.uid == exhibition.organizerId)
+
+    // Resolve organizer details from provider.
+    final creator =
+        userProvider.users.any((u) => u.uid == exhibition.organizerId)
         ? userProvider.users.firstWhere((u) => u.uid == exhibition.organizerId)
         : null;
 
     String creatorName = '';
+
+    // Pick best available organizer display name.
     if (creator != null) {
       if (creator.name.isNotEmpty) {
         creatorName = creator.name;
-      } else if (creator.preferredName != null && creator.preferredName!.isNotEmpty) {
+      } else if (creator.preferredName != null &&
+          creator.preferredName!.isNotEmpty) {
         creatorName = creator.preferredName!;
       } else if (creator.email.isNotEmpty) {
         creatorName = creator.email;
@@ -179,20 +202,27 @@ class _OrganizerExhibitionCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             InkWell(
-              onTap: () => context.push(AppRoutes.organizerExhibitionDetails, extra: exhibition),
+              // Navigate to exhibition details.
+              onTap: () => context.push(
+                AppRoutes.organizerExhibitionDetails,
+                extra: exhibition,
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Left thumbnail box (104x104) with rounded corners (20)
+                    // Show exhibition image thumbnail.
                     Container(
                       width: 104,
                       height: 104,
                       decoration: BoxDecoration(
                         color: const Color(0xFFFDF4F6),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.grey.shade100, width: 0.8),
+                        border: Border.all(
+                          color: Colors.grey.shade100,
+                          width: 0.8,
+                        ),
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(20),
@@ -200,11 +230,12 @@ class _OrganizerExhibitionCard extends StatelessWidget {
                             ? Image.network(
                                 exhibition.imageUrls.first,
                                 fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) => const Icon(
-                                  Icons.store_mall_directory_outlined,
-                                  size: 36,
-                                  color: Color(0xFFE8B2C1),
-                                ),
+                                errorBuilder: (context, error, stackTrace) =>
+                                    const Icon(
+                                      Icons.store_mall_directory_outlined,
+                                      size: 36,
+                                      color: Color(0xFFE8B2C1),
+                                    ),
                               )
                             : const Icon(
                                 Icons.store_mall_directory_outlined,
@@ -214,12 +245,13 @@ class _OrganizerExhibitionCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 16),
-                    // Right info details
+
+                    // Show exhibition information.
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Title + Status Row
+                          // Show exhibition name and status.
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -238,16 +270,22 @@ class _OrganizerExhibitionCard extends StatelessWidget {
                               ),
                               const SizedBox(width: 8),
                               StatusBadge(
-                                label: exhibition.isPublished ? 'Published' : 'Draft',
+                                label: exhibition.isPublished
+                                    ? 'Published'
+                                    : 'Draft',
                               ),
                             ],
                           ),
                           const SizedBox(height: 8),
-                          
-                          // Creator Row with mixed emphasis
+
+                          // Show organizer name.
                           Row(
                             children: [
-                              Icon(Icons.person_outline, size: 15, color: Colors.grey.shade400),
+                              Icon(
+                                Icons.person_outline,
+                                size: 15,
+                                color: Colors.grey.shade400,
+                              ),
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text.rich(
@@ -276,10 +314,14 @@ class _OrganizerExhibitionCard extends StatelessWidget {
                           ),
                           const SizedBox(height: 6),
 
-                          // Location Row
+                          // Show exhibition location.
                           Row(
                             children: [
-                              Icon(Icons.location_on_outlined, size: 15, color: Colors.grey.shade400),
+                              Icon(
+                                Icons.location_on_outlined,
+                                size: 15,
+                                color: Colors.grey.shade400,
+                              ),
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
@@ -295,15 +337,22 @@ class _OrganizerExhibitionCard extends StatelessWidget {
                             ],
                           ),
                           const SizedBox(height: 6),
-                          
-                          // Calendar Row
+
+                          // Show exhibition date range.
                           Row(
                             children: [
-                              Icon(Icons.calendar_today_outlined, size: 15, color: Colors.grey.shade400),
+                              Icon(
+                                Icons.calendar_today_outlined,
+                                size: 15,
+                                color: Colors.grey.shade400,
+                              ),
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
-                                  DateFormatHelper.formatDateRange(exhibition.startDate, exhibition.endDate),
+                                  DateFormatHelper.formatDateRange(
+                                    exhibition.startDate,
+                                    exhibition.endDate,
+                                  ),
                                   style: TextStyle(
                                     color: Colors.grey.shade500,
                                     fontSize: 13,
@@ -322,10 +371,13 @@ class _OrganizerExhibitionCard extends StatelessWidget {
               ),
             ),
             Divider(height: 1, color: Colors.grey.shade100),
-            
-            // Left-aligned dark bottom action row with comfortable left padding matching reference "View Details" style
+
+            // Show manage exhibition action.
             InkWell(
-              onTap: () => context.push(AppRoutes.organizerExhibitionDetails, extra: exhibition),
+              onTap: () => context.push(
+                AppRoutes.organizerExhibitionDetails,
+                extra: exhibition,
+              ),
               child: Container(
                 width: double.infinity,
                 height: 64,

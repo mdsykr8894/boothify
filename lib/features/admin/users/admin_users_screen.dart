@@ -11,6 +11,7 @@ import '../../../providers/auth_provider.dart';
 import '../../../providers/user_provider.dart';
 import 'widgets/admin_user_card.dart';
 
+// Display all registered users for admin.
 class AdminUsersScreen extends StatefulWidget {
   const AdminUsersScreen({super.key});
 
@@ -19,7 +20,10 @@ class AdminUsersScreen extends StatefulWidget {
 }
 
 class _AdminUsersScreenState extends State<AdminUsersScreen> {
+  // Track selected user filter.
   String _selectedFilter = 'All';
+
+  // Track whether user data has been fetched.
   bool _hasFetched = false;
 
   @override
@@ -30,11 +34,18 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+
     final auth = context.watch<AuthProvider>();
-    if (!auth.isInitialized || auth.currentUser == null || auth.currentUser?.role != 'Admin') {
+
+    // Reset fetch state when admin session is unavailable.
+    if (!auth.isInitialized ||
+        auth.currentUser == null ||
+        auth.currentUser?.role != 'Admin') {
       _hasFetched = false;
     } else if (!_hasFetched) {
       _hasFetched = true;
+
+      // Fetch users after first frame.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         _fetchUsers();
@@ -43,6 +54,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   }
 
   void _fetchUsers() {
+    // Load all registered users.
     context.read<UserProvider>().fetchAllUsers();
   }
 
@@ -52,7 +64,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     final isLoading = userProvider.isLoading;
     final allUsers = userProvider.users;
 
-    // Filter users
+    // Filter users by account status.
     final users = allUsers.where((user) {
       if (_selectedFilter == 'All') return true;
       if (_selectedFilter == 'Active') return user.isActive;
@@ -66,6 +78,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           children: [
             const AppPageHeader(title: 'User'),
             const SizedBox(height: AppSpacing.s),
+
+            // Show user status filters.
             AppFilterChips(
               selectedValue: _selectedFilter,
               filters: const ['All', 'Active', 'Inactive'],
@@ -76,31 +90,39 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
               child: isLoading
                   ? const AppLoading()
                   : users.isEmpty
-                      ? AppEmptyState(
-                          title: _selectedFilter == 'All' ? 'No Users' : 'No $_selectedFilter Users',
-                          message: 'Registered users will appear here.',
-                          icon: Icons.group_outlined,
-                        )
-                      : RefreshIndicator(
-                          onRefresh: () async => _fetchUsers(),
-                          child: ListView.builder(
-                            physics: const ClampingScrollPhysics(),
-                            padding: const EdgeInsets.only(
-                              left: AppSpacing.screenHorizontal,
-                              right: AppSpacing.screenHorizontal,
-                              top: AppSpacing.m,
-                              bottom: AppSpacing.s,
-                            ),
-                            itemCount: users.length,
-                            itemBuilder: (context, index) {
-                              final user = users[index];
-                              return AdminUserCard(
-                                user: user,
-                                onTap: () => context.push(AppRoutes.adminUserDetails, extra: user),
-                              );
-                            },
-                          ),
+                  ? AppEmptyState(
+                      title: _selectedFilter == 'All'
+                          ? 'No Users'
+                          : 'No $_selectedFilter Users',
+                      message: 'Registered users will appear here.',
+                      icon: Icons.group_outlined,
+                    )
+                  : RefreshIndicator(
+                      // Refresh user list.
+                      onRefresh: () async => _fetchUsers(),
+                      child: ListView.builder(
+                        physics: const ClampingScrollPhysics(),
+                        padding: const EdgeInsets.only(
+                          left: AppSpacing.screenHorizontal,
+                          right: AppSpacing.screenHorizontal,
+                          top: AppSpacing.m,
+                          bottom: AppSpacing.s,
                         ),
+                        itemCount: users.length,
+                        itemBuilder: (context, index) {
+                          final user = users[index];
+
+                          // Show admin user card.
+                          return AdminUserCard(
+                            user: user,
+                            onTap: () => context.push(
+                              AppRoutes.adminUserDetails,
+                              extra: user,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
             ),
           ],
         ),

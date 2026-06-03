@@ -4,6 +4,7 @@ import '../constants/app_spacing.dart';
 import '../constants/app_text_styles.dart';
 import 'app_button.dart';
 
+// Reusable empty state view.
 class AppEmptyState extends StatelessWidget {
   final String title;
   final String message;
@@ -34,6 +35,7 @@ class AppEmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Show empty state icon.
             Container(
               width: iconBgSize,
               height: iconBgSize,
@@ -72,6 +74,8 @@ class AppEmptyState extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
             ),
+
+            // Show optional action button.
             if (actionLabel != null && onActionPressed != null) ...[
               const SizedBox(height: AppSpacing.l),
               AppButton(

@@ -9,6 +9,7 @@ import '../../../../data/models/user_model.dart';
 import '../../../../providers/user_provider.dart';
 import '../../../../core/utils/feedback_helper.dart';
 
+// Bottom sheet for editing basic user account details.
 class EditUserBottomSheet extends StatefulWidget {
   final UserModel user;
 
@@ -28,6 +29,8 @@ class _EditUserBottomSheetState extends State<EditUserBottomSheet> {
   @override
   void initState() {
     super.initState();
+
+    // Fill form with current user data.
     _nameController = TextEditingController(text: widget.user.name);
     _selectedRole = widget.user.role;
   }
@@ -45,17 +48,21 @@ class _EditUserBottomSheetState extends State<EditUserBottomSheet> {
 
     if (!_formKey.currentState!.validate()) return;
 
+    // Prepare updated user account data.
     final updatedUser = widget.user.copyWith(
       name: _nameController.text.trim(),
       role: _selectedRole,
     );
 
     final provider = context.read<UserProvider>();
+
+    // Save updated user through provider.
     final success = await provider.updateUser(updatedUser);
 
     if (mounted) {
       if (success) {
         Navigator.pop(context, updatedUser);
+
         if (context.mounted) {
           FeedbackHelper.showSuccess(context, 'User updated successfully');
         }
@@ -79,10 +86,14 @@ class _EditUserBottomSheetState extends State<EditUserBottomSheet> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Show form error message.
             if (_formError != null) ...[
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.primaryAccent.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(12),
@@ -114,6 +125,8 @@ class _EditUserBottomSheetState extends State<EditUserBottomSheet> {
               ),
               const SizedBox(height: AppSpacing.m),
             ],
+
+            // Edit user full name.
             AppTextField(
               controller: _nameController,
               label: 'Full Name',
@@ -121,15 +134,14 @@ class _EditUserBottomSheetState extends State<EditUserBottomSheet> {
               validator: (v) => v == null || v.isEmpty ? 'Required' : null,
             ),
             const SizedBox(height: AppSpacing.m),
+
+            // Select user role.
             BottomSheetDropdownField<String>(
               label: 'Role',
               hint: 'Select user role',
               value: _selectedRole,
               items: _roles.map((role) {
-                return DropdownMenuItem(
-                  value: role,
-                  child: Text(role),
-                );
+                return DropdownMenuItem(value: role, child: Text(role));
               }).toList(),
               onChanged: (val) {
                 if (val != null) setState(() => _selectedRole = val);

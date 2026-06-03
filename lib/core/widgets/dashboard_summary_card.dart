@@ -3,6 +3,7 @@ import '../constants/app_colors.dart';
 import '../constants/app_radius.dart';
 import '../constants/app_spacing.dart';
 
+// Reusable dashboard summary card.
 class DashboardSummaryCard extends StatelessWidget {
   final String title;
   final String value;
@@ -21,13 +22,12 @@ class DashboardSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Default to the unified premium Boothify brand pink accent for consistency
     final Color effectiveColor = iconColor ?? AppColors.primaryAccent;
 
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(AppRadius.xl), // Premium card radius (24.0)
+        borderRadius: BorderRadius.circular(AppRadius.xl),
         border: Border.all(color: Colors.grey.shade100, width: 1.2),
         boxShadow: [
           BoxShadow(
@@ -43,11 +43,11 @@ class DashboardSummaryCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Show icon and value.
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Soft pink circular icon container at the top-left
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
@@ -60,7 +60,6 @@ class DashboardSummaryCard extends StatelessWidget {
                     size: 20,
                   ),
                 ),
-                // Large numeric value at the top-right
                 Text(
                   value,
                   style: const TextStyle(
@@ -73,7 +72,7 @@ class DashboardSummaryCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 14),
-            // Category label below the top row
+
             Text(
               title,
               style: const TextStyle(
@@ -84,7 +83,8 @@ class DashboardSummaryCard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            // Subtitle below the label
+
+            // Show optional subtitle.
             if (subtitle != null) ...[
               const SizedBox(height: 4),
               Text(

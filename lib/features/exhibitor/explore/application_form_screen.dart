@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+
 import '../../../app/routes/app_routes.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
@@ -35,30 +36,50 @@ class ApplicationFormScreen extends StatefulWidget {
 }
 
 class _ApplicationFormScreenState extends State<ApplicationFormScreen> {
+  // Form key for validating application input.
   final _formKey = GlobalKey<FormState>();
+
+  // Controllers store user input from form fields.
   final _companyController = TextEditingController();
   final _businessTypeController = TextEditingController();
   final _productNameController = TextEditingController();
   final _descriptionController = TextEditingController();
 
+  // Store selected additional requirements.
   final List<String> _selectedRequirements = [];
+
+  // Default requirement options.
   final List<String> _availableRequirements = [
     'Electricity',
     'WiFi',
     'Extra Table & Chair',
   ];
 
+  // Store selected participation period.
   DateTime? _participationStartDate;
   DateTime? _participationEndDate;
 
   @override
   void initState() {
     super.initState();
+
+    // Use full exhibition duration as default participation period.
     _participationStartDate = widget.exhibition.startDate;
     _participationEndDate = widget.exhibition.endDate;
   }
 
+  @override
+  void dispose() {
+    // Dispose controllers to prevent memory leaks.
+    _companyController.dispose();
+    _businessTypeController.dispose();
+    _productNameController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
   void _toggleRequirement(String req) {
+    // Add or remove selected requirement.
     setState(() {
       if (_selectedRequirements.contains(req)) {
         _selectedRequirements.remove(req);
@@ -68,11 +89,15 @@ class _ApplicationFormScreenState extends State<ApplicationFormScreen> {
     });
   }
 
-  Future<void> _selectParticipationDate(BuildContext context, bool isStart) async {
+  Future<void> _selectParticipationDate(
+    BuildContext context,
+    bool isStart,
+  ) async {
+    // Open date picker within exhibition date range.
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: isStart 
-          ? (_participationStartDate ?? widget.exhibition.startDate) 
+      initialDate: isStart
+          ? (_participationStartDate ?? widget.exhibition.startDate)
           : (_participationEndDate ?? widget.exhibition.endDate),
       firstDate: widget.exhibition.startDate,
       lastDate: widget.exhibition.endDate,
@@ -105,16 +130,25 @@ class _ApplicationFormScreenState extends State<ApplicationFormScreen> {
         );
       },
     );
+
     if (picked != null) {
       setState(() {
         if (isStart) {
+          // Update participation start date.
           _participationStartDate = picked;
-          if (_participationEndDate != null && _participationStartDate!.isAfter(_participationEndDate!)) {
+
+          // Keep end date after start date.
+          if (_participationEndDate != null &&
+              _participationStartDate!.isAfter(_participationEndDate!)) {
             _participationEndDate = _participationStartDate;
           }
         } else {
+          // Update participation end date.
           _participationEndDate = picked;
-          if (_participationStartDate != null && _participationEndDate!.isBefore(_participationStartDate!)) {
+
+          // Keep start date before end date.
+          if (_participationStartDate != null &&
+              _participationEndDate!.isBefore(_participationStartDate!)) {
             _participationStartDate = _participationEndDate;
           }
         }
@@ -123,7 +157,7 @@ class _ApplicationFormScreenState extends State<ApplicationFormScreen> {
   }
 
   void _handleSubmit() async {
-    // 1. Fast local check
+    // Fast local check before Firestore verification.
     if (!widget.exhibition.isBookingOpen) {
       FeedbackHelper.showError(
         context,
@@ -132,45 +166,58 @@ class _ApplicationFormScreenState extends State<ApplicationFormScreen> {
       return;
     }
 
+    // Validate required form fields.
     if (!_formKey.currentState!.validate()) return;
 
+    // Require participation dates.
     if (_participationStartDate == null || _participationEndDate == null) {
       FeedbackHelper.showError(context, 'Please select participation dates.');
       return;
     }
 
+    // Prevent invalid date range.
     if (_participationStartDate!.isAfter(_participationEndDate!)) {
       FeedbackHelper.showError(context, 'Start date cannot be after end date.');
       return;
     }
 
+    // Ensure selected dates are within exhibition duration.
     if (_participationStartDate!.isBefore(widget.exhibition.startDate) ||
         _participationEndDate!.isAfter(widget.exhibition.endDate)) {
-      FeedbackHelper.showError(context, 'Participation dates must be within the exhibition duration.');
+      FeedbackHelper.showError(
+        context,
+        'Participation dates must be within the exhibition duration.',
+      );
       return;
     }
 
+    // Get current logged-in user.
     final authProvider = context.read<AuthProvider>();
     final user = authProvider.currentUser;
 
+    // Require login before submission.
     if (user == null) {
       FeedbackHelper.showWarning(context, 'Please login to submit application.');
       context.go(AppRoutes.login);
       return;
     }
 
-    // 2. Real-time Firestore check
     try {
+      // Re-check booking status directly from Firestore.
       final doc = await FirebaseFirestore.instance
           .collection('exhibitions')
           .doc(widget.exhibition.id)
           .get();
+
       if (doc.exists) {
         final data = doc.data();
+
         if (data != null) {
           final isBookingOpen = data['isBookingOpen'] as bool? ?? true;
+
           if (!isBookingOpen) {
             if (!mounted) return;
+
             FeedbackHelper.showError(
               context,
               'Booking is closed. You cannot submit an application for this exhibition.',
@@ -180,9 +227,11 @@ class _ApplicationFormScreenState extends State<ApplicationFormScreen> {
         }
       }
     } catch (e) {
+      // Do not block submission if verification check fails.
       debugPrint('Error verifying booking status: $e');
     }
 
+    // Build application data before submitting.
     final application = ApplicationModel(
       id: '',
       userId: user.uid,
@@ -201,22 +250,32 @@ class _ApplicationFormScreenState extends State<ApplicationFormScreen> {
     );
 
     if (!mounted) return;
+
+    // Submit application through provider.
     final appProvider = context.read<ApplicationProvider>();
     final success = await appProvider.submitApplication(application);
 
     if (mounted) {
       if (success) {
-        FeedbackHelper.showSuccess(context, 'Application submitted successfully!');
-        // Navigate back to root/home
+        // Show success message and return to home.
+        FeedbackHelper.showSuccess(
+          context,
+          'Application submitted successfully!',
+        );
         context.go(AppRoutes.root);
       } else {
-        FeedbackHelper.showError(context, appProvider.errorMessage ?? 'Submission failed.');
+        // Show provider error if submission fails.
+        FeedbackHelper.showError(
+          context,
+          appProvider.errorMessage ?? 'Submission failed.',
+        );
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Watch loading state for submit button.
     final isLoading = context.watch<ApplicationProvider>().isLoading;
 
     return Scaffold(
@@ -238,13 +297,17 @@ class _ApplicationFormScreenState extends State<ApplicationFormScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Booth Summary Card
+                      // Selected booth and package summary.
                       _buildSummaryCard(),
                       const SizedBox(height: AppSpacing.xl),
 
+                      // Participation period section.
                       const Text(
                         'Participation Period',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: AppSpacing.s),
                       Text(
@@ -259,45 +322,56 @@ class _ApplicationFormScreenState extends State<ApplicationFormScreen> {
                         children: [
                           BottomSheetDateField(
                             innerLabel: 'Start Date',
-                            date: _participationStartDate ?? widget.exhibition.startDate,
-                            onTap: () => _selectParticipationDate(context, true),
+                            date: _participationStartDate ??
+                                widget.exhibition.startDate,
+                            onTap: () =>
+                                _selectParticipationDate(context, true),
                             dateFormat: DateFormat('d MMM yyyy'),
                           ),
                           const SizedBox(width: 16),
                           BottomSheetDateField(
                             innerLabel: 'End Date',
-                            date: _participationEndDate ?? widget.exhibition.endDate,
-                            onTap: () => _selectParticipationDate(context, false),
+                            date: _participationEndDate ??
+                                widget.exhibition.endDate,
+                            onTap: () =>
+                                _selectParticipationDate(context, false),
                             dateFormat: DateFormat('d MMM yyyy'),
                           ),
                         ],
                       ),
                       const SizedBox(height: AppSpacing.xl),
 
+                      // Company information section.
                       const Text(
                         'Company Information',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: AppSpacing.m),
                       AppTextField(
                         controller: _companyController,
                         label: 'Company Name',
                         hint: 'Enter registered company name',
-                        validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                        validator: (v) =>
+                            v == null || v.isEmpty ? 'Required' : null,
                       ),
                       const SizedBox(height: AppSpacing.m),
                       AppTextField(
                         controller: _businessTypeController,
                         label: 'Business Type',
                         hint: 'e.g. Technology, Retail, Food',
-                        validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                        validator: (v) =>
+                            v == null || v.isEmpty ? 'Required' : null,
                       ),
                       const SizedBox(height: AppSpacing.m),
                       AppTextField(
                         controller: _productNameController,
                         label: 'Product / Service Name',
                         hint: 'What are you showcasing?',
-                        validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                        validator: (v) =>
+                            v == null || v.isEmpty ? 'Required' : null,
                       ),
                       const SizedBox(height: AppSpacing.m),
                       AppTextField(
@@ -305,24 +379,33 @@ class _ApplicationFormScreenState extends State<ApplicationFormScreen> {
                         label: 'Description',
                         hint: 'Briefly describe your participation',
                         maxLines: 3,
-                        validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                        validator: (v) =>
+                            v == null || v.isEmpty ? 'Required' : null,
                       ),
                       const SizedBox(height: AppSpacing.xl),
 
+                      // Additional requirements section.
                       const Text(
                         'Additional Requirements',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: AppSpacing.s),
                       Wrap(
                         spacing: 8,
                         children: _availableRequirements.map((req) {
-                          final isSelected = _selectedRequirements.contains(req);
+                          final isSelected =
+                              _selectedRequirements.contains(req);
+
                           return FilterChip(
                             label: Text(req),
                             selected: isSelected,
                             onSelected: (_) => _toggleRequirement(req),
-                            selectedColor: AppColors.primaryAccent.withValues(alpha: 0.2),
+                            selectedColor: AppColors.primaryAccent.withValues(
+                              alpha: 0.2,
+                            ),
                             checkmarkColor: AppColors.primaryAccent,
                           );
                         }).toList(),
@@ -343,7 +426,9 @@ class _ApplicationFormScreenState extends State<ApplicationFormScreen> {
         ),
         decoration: BoxDecoration(
           color: Colors.white,
-          border: Border(top: BorderSide(color: Colors.grey.shade200)),
+          border: Border(
+            top: BorderSide(color: Colors.grey.shade200),
+          ),
         ),
         child: SafeArea(
           child: widget.exhibition.isBookingOpen
@@ -383,6 +468,7 @@ class _ApplicationFormScreenState extends State<ApplicationFormScreen> {
   }
 
   Widget _buildSummaryCard() {
+    // Build selected booth and package summary card.
     return Container(
       padding: const EdgeInsets.all(AppSpacing.m),
       decoration: BoxDecoration(
@@ -395,7 +481,10 @@ class _ApplicationFormScreenState extends State<ApplicationFormScreen> {
         children: [
           Text(
             widget.exhibition.name,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
           ),
           const SizedBox(height: AppSpacing.s),
           Row(
@@ -404,13 +493,19 @@ class _ApplicationFormScreenState extends State<ApplicationFormScreen> {
               Text('Booth Spot: ${widget.boothSpot.spotNumber}'),
               Text(
                 'RM ${widget.boothPackage.price.toStringAsFixed(0)}',
-                style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryAccent),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primaryAccent,
+                ),
               ),
             ],
           ),
           Text(
             'Package: ${widget.boothPackage.name} (${widget.boothPackage.size})',
-            style: const TextStyle(color: AppColors.secondaryText, fontSize: 13),
+            style: const TextStyle(
+              color: AppColors.secondaryText,
+              fontSize: 13,
+            ),
           ),
         ],
       ),
