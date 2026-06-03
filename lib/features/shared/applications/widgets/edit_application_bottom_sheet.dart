@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/widgets/app_bottom_sheet_scaffold.dart';
 import '../../../../core/widgets/app_text_field.dart';
+import '../../../../core/widgets/bottom_sheet_date_field.dart';
 import '../../../../data/models/application_model.dart';
 import '../../../../data/models/booth_model.dart';
 import '../../../../data/models/booth_spot_model.dart';
 import '../../../../providers/application_provider.dart';
 import '../../../../providers/booth_provider.dart';
 import '../../../../providers/booth_spot_provider.dart';
+import '../../../../providers/exhibition_provider.dart';
 import '../../../../core/utils/feedback_helper.dart';
 
 class EditApplicationBottomSheet extends StatefulWidget {
@@ -24,25 +27,15 @@ class EditApplicationBottomSheet extends StatefulWidget {
 class _EditApplicationBottomSheetState extends State<EditApplicationBottomSheet> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _companyController;
-  late TextEditingController _businessTypeController;
   late TextEditingController _productController;
   late TextEditingController _descriptionController;
   late List<String> _selectedRequirements;
   final _customRequirementController = TextEditingController();
-  String? _selectedBusinessType;
   String? _formError;
 
-  static const List<String> _businessTypeOptions = [
-    'Technology',
-    'Retail',
-    'Food & Beverage',
-    'Fashion',
-    'Education',
-    'Health & Wellness',
-    'Art & Creative',
-    'Services',
-    'Other',
-  ];
+  DateTime? _participationStartDate;
+  DateTime? _participationEndDate;
+  bool _datesInitialized = false;
 
   final List<String> _availableRequirements = [
     'WiFi',
@@ -53,23 +46,23 @@ class _EditApplicationBottomSheetState extends State<EditApplicationBottomSheet>
   void initState() {
     super.initState();
     _companyController = TextEditingController(text: widget.application.companyName);
-    _businessTypeController = TextEditingController(text: widget.application.businessType);
     _productController = TextEditingController(text: widget.application.productName);
     _descriptionController = TextEditingController(text: widget.application.description);
     _selectedRequirements = List.from(widget.application.requirements);
 
-    final businessType = widget.application.businessType;
-    if (_businessTypeOptions.contains(businessType)) {
-      _selectedBusinessType = businessType;
-    } else if (businessType.isNotEmpty) {
-      _selectedBusinessType = 'Other';
+    // Resolve exhibition and initialize dates if already fetched
+    final exhibitions = context.read<ExhibitionProvider>().allExhibitions;
+    final exhibition = exhibitions.where((e) => e.id == widget.application.exhibitionId).firstOrNull;
+    if (exhibition != null) {
+      _participationStartDate = widget.application.participationStartDate ?? exhibition.startDate;
+      _participationEndDate = widget.application.participationEndDate ?? exhibition.endDate;
+      _datesInitialized = true;
     }
   }
 
   @override
   void dispose() {
     _companyController.dispose();
-    _businessTypeController.dispose();
     _productController.dispose();
     _descriptionController.dispose();
     _customRequirementController.dispose();
@@ -98,19 +91,76 @@ class _EditApplicationBottomSheetState extends State<EditApplicationBottomSheet>
     _customRequirementController.clear();
   }
 
+  Future<void> _selectParticipationDate(
+      BuildContext context, bool isStart, DateTime exhibitionStart, DateTime exhibitionEnd) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: isStart 
+          ? (_participationStartDate ?? exhibitionStart) 
+          : (_participationEndDate ?? exhibitionEnd),
+      firstDate: exhibitionStart,
+      lastDate: exhibitionEnd,
+      builder: (BuildContext context, Widget? child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.primaryAccent,
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: AppColors.primaryText,
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primaryText,
+              ),
+            ),
+            datePickerTheme: DatePickerThemeData(
+              backgroundColor: Colors.white,
+              headerBackgroundColor: Colors.white,
+              headerForegroundColor: AppColors.primaryText,
+              surfaceTintColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              dayStyle: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() {
+        if (isStart) {
+          _participationStartDate = picked;
+          if (_participationEndDate != null && _participationStartDate!.isAfter(_participationEndDate!)) {
+            _participationEndDate = _participationStartDate;
+          }
+        } else {
+          _participationEndDate = picked;
+          if (_participationStartDate != null && _participationEndDate!.isBefore(_participationStartDate!)) {
+            _participationStartDate = _participationEndDate;
+          }
+        }
+      });
+    }
+  }
+
   bool _hasRealChanges() {
     final app = widget.application;
     final sameCompany = _companyController.text.trim() == app.companyName;
-    final sameBusinessType = _businessTypeController.text.trim() == app.businessType;
     final sameProduct = _productController.text.trim() == app.productName;
     final sameDescription = _descriptionController.text.trim() == app.description;
+
+    final sameStartDate = _participationStartDate == app.participationStartDate;
+    final sameEndDate = _participationEndDate == app.participationEndDate;
 
     // Requirements comparison
     final reqsChanged = _selectedRequirements.length != app.requirements.length ||
         !_selectedRequirements.every((r) => app.requirements.contains(r)) ||
         !app.requirements.every((r) => _selectedRequirements.contains(r));
 
-    return !sameCompany || !sameBusinessType || !sameProduct || !sameDescription || reqsChanged;
+    return !sameCompany || !sameProduct || !sameDescription || reqsChanged || !sameStartDate || !sameEndDate;
   }
 
   void _handleSave() async {
@@ -120,6 +170,33 @@ class _EditApplicationBottomSheetState extends State<EditApplicationBottomSheet>
 
     if (!_formKey.currentState!.validate()) return;
 
+    final exhibitions = context.read<ExhibitionProvider>().allExhibitions;
+    final exhibition = exhibitions.where((e) => e.id == widget.application.exhibitionId).firstOrNull;
+
+    if (exhibition != null) {
+      if (_participationStartDate == null || _participationEndDate == null) {
+        setState(() {
+          _formError = 'Please select participation dates.';
+        });
+        return;
+      }
+
+      if (_participationStartDate!.isAfter(_participationEndDate!)) {
+        setState(() {
+          _formError = 'Start date cannot be after end date.';
+        });
+        return;
+      }
+
+      if (_participationStartDate!.isBefore(exhibition.startDate) ||
+          _participationEndDate!.isAfter(exhibition.endDate)) {
+        setState(() {
+          _formError = 'Participation dates must be within the exhibition duration.';
+        });
+        return;
+      }
+    }
+
     final navigator = Navigator.of(context);
     final provider = context.read<ApplicationProvider>();
 
@@ -127,10 +204,11 @@ class _EditApplicationBottomSheetState extends State<EditApplicationBottomSheet>
 
     final updatedApp = widget.application.copyWith(
       companyName: _companyController.text.trim(),
-      businessType: _businessTypeController.text.trim(),
       productName: _productController.text.trim(),
       description: _descriptionController.text.trim(),
       requirements: _selectedRequirements,
+      participationStartDate: _participationStartDate,
+      participationEndDate: _participationEndDate,
     );
 
     final success = await provider.updateApplication(updatedApp);
@@ -150,6 +228,43 @@ class _EditApplicationBottomSheetState extends State<EditApplicationBottomSheet>
         });
       }
     }
+  }
+
+  Widget _buildReadOnlyField({
+    required String label,
+    required String value,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppColors.primaryText.withValues(alpha: 0.7),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Text(
+            value,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey.shade600,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildSectionHeader(String title) {
@@ -218,82 +333,21 @@ class _EditApplicationBottomSheetState extends State<EditApplicationBottomSheet>
     );
   }
 
-  Widget _buildDropdownField({
-    required String label,
-    required String hint,
-    required String? value,
-    required List<String> items,
-    required ValueChanged<String?> onChanged,
-    String? Function(String?)? validator,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: AppColors.primaryText.withValues(alpha: 0.7),
-          ),
-        ),
-        const SizedBox(height: 8),
-        DropdownButtonFormField<String>(
-          initialValue: value,
-          hint: Text(
-            hint,
-            style: TextStyle(
-              color: Colors.grey.shade400,
-              fontSize: 15,
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-          items: items.map((item) {
-            return DropdownMenuItem(
-              value: item,
-              child: Text(item),
-            );
-          }).toList(),
-          onChanged: onChanged,
-          validator: validator,
-          icon: Icon(Icons.keyboard_arrow_down_rounded, color: Colors.grey.shade400),
-          dropdownColor: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-            color: AppColors.primaryText,
-          ),
-          decoration: InputDecoration(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-            fillColor: Colors.white,
-            filled: true,
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: Colors.grey.shade200, width: 1.5),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: AppColors.primaryAccent, width: 1.5),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+
 
   @override
   Widget build(BuildContext context) {
     final boothProvider = context.watch<BoothProvider>();
     final spotProvider = context.watch<BoothSpotProvider>();
+
+    final exhibitions = context.watch<ExhibitionProvider>().allExhibitions;
+    final exhibition = exhibitions.where((e) => e.id == widget.application.exhibitionId).firstOrNull;
+
+    if (exhibition != null && !_datesInitialized) {
+      _participationStartDate = widget.application.participationStartDate ?? exhibition.startDate;
+      _participationEndDate = widget.application.participationEndDate ?? exhibition.endDate;
+      _datesInitialized = true;
+    }
 
     final spot = spotProvider.boothSpots.firstWhere(
       (s) => s.id == widget.application.boothSpotId,
@@ -426,31 +480,44 @@ class _EditApplicationBottomSheetState extends State<EditApplicationBottomSheet>
               validator: (v) => v == null || v.isEmpty ? 'Required' : null,
             ),
             const SizedBox(height: 14),
-            _buildDropdownField(
+            _buildReadOnlyField(
               label: 'Business Type',
-              hint: 'Select business type',
-              value: _selectedBusinessType,
-              items: _businessTypeOptions,
-              onChanged: (val) {
-                setState(() {
-                  _selectedBusinessType = val;
-                  if (val != 'Other') {
-                    _businessTypeController.text = val ?? '';
-                  } else {
-                    _businessTypeController.clear();
-                  }
-                });
-              },
-              validator: (v) => v == null ? 'Required' : null,
+              value: widget.application.businessType,
             ),
-            if (_selectedBusinessType == 'Other') ...[
-              const SizedBox(height: 14),
-              AppTextField(
-                controller: _businessTypeController,
-                label: 'Specify Business Type',
-                hint: 'Enter your business type',
-                validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+            const SizedBox(height: 14),
+
+            // Section 1.5: Participation Period
+            if (exhibition != null) ...[
+              _buildSectionHeader('Participation Period'),
+              Row(
+                children: [
+                  BottomSheetDateField(
+                    innerLabel: 'Start Date',
+                    date: _participationStartDate ?? exhibition.startDate,
+                    onTap: () => _selectParticipationDate(context, true, exhibition.startDate, exhibition.endDate),
+                    dateFormat: DateFormat('d MMM yyyy'),
+                  ),
+                  const SizedBox(width: 16),
+                  BottomSheetDateField(
+                    innerLabel: 'End Date',
+                    date: _participationEndDate ?? exhibition.endDate,
+                    onTap: () => _selectParticipationDate(context, false, exhibition.startDate, exhibition.endDate),
+                    dateFormat: DateFormat('d MMM yyyy'),
+                  ),
+                ],
               ),
+              const SizedBox(height: 14),
+            ] else ...[
+              const SizedBox(height: 8),
+              Text(
+                'Participation Period: ${_participationStartDate != null && _participationEndDate != null ? "${DateFormat('d MMM yyyy').format(_participationStartDate!)} - ${DateFormat('d MMM yyyy').format(_participationEndDate!)}" : "Full Event Duration"}',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.secondaryText,
+                ),
+              ),
+              const SizedBox(height: 14),
             ],
 
             // Section 2: Booth Details

@@ -11,6 +11,7 @@ import '../../../core/widgets/app_loading.dart';
 import '../../../core/widgets/app_page_header.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../data/models/exhibition_model.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../providers/exhibition_provider.dart';
 import '../../../providers/user_provider.dart';
 
@@ -23,14 +24,27 @@ class AdminExhibitionsScreen extends StatefulWidget {
 
 class _AdminExhibitionsScreenState extends State<AdminExhibitionsScreen> {
   String _selectedFilter = 'All';
+  bool _hasFetched = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ExhibitionProvider>().fetchAllExhibitions();
-      context.read<UserProvider>().fetchAllUsers();
-    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final auth = context.watch<AuthProvider>();
+    if (!auth.isInitialized || auth.currentUser == null || auth.currentUser?.role != 'Admin') {
+      _hasFetched = false;
+    } else if (!_hasFetched) {
+      _hasFetched = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        context.read<ExhibitionProvider>().fetchAllExhibitions();
+        context.read<UserProvider>().fetchAllUsers();
+      });
+    }
   }
 
   @override

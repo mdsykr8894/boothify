@@ -26,6 +26,35 @@ class ApplicationService {
           throw Exception('This booth is no longer available. Please choose another booth.');
         }
 
+        // 2.5. Check competitor adjacency rules
+        final activeAppsSnapshot = await _firestore
+            .collection(_collection)
+            .where('exhibitionId', isEqualTo: application.exhibitionId)
+            .get();
+
+        final normalizedNewBusinessType = application.businessType.trim().toLowerCase();
+
+        for (final doc in activeAppsSnapshot.docs) {
+          // Skip check if the existing application has the same ID to avoid self-conflict
+          if (doc.id == application.id) continue;
+
+          final appData = doc.data();
+          final appStatus = appData['status'] ?? '';
+          
+          if (appStatus == 'Pending' ||
+              appStatus == 'Approved' ||
+              appStatus == 'Paid' ||
+              appStatus == 'Booked') {
+            final existingBusinessType = (appData['businessType'] as String? ?? '').trim().toLowerCase();
+            if (existingBusinessType == normalizedNewBusinessType) {
+              final existingBoothNumber = appData['boothNumber'] as String? ?? '';
+              if (_isAdjacentSpot(application.boothNumber, existingBoothNumber)) {
+                throw Exception('A nearby booth is already reserved by a similar business type. Please choose another booth.');
+              }
+            }
+          }
+        }
+
         // 3. Create application document
         final appRef = _firestore.collection(_collection).doc();
         transaction.set(appRef, application.toMap());
@@ -38,6 +67,26 @@ class ApplicationService {
       debugPrint('Error submitting application: $e');
       rethrow;
     }
+  }
+
+  /// Helper to check if two booth spot numbers are horizontally or vertically adjacent.
+  bool _isAdjacentSpot(String spot1, String spot2) {
+    if (spot1.length < 2 || spot2.length < 2) return false;
+
+    final row1 = spot1[0].toUpperCase().codeUnitAt(0);
+    final col1 = int.tryParse(spot1.substring(1));
+
+    final row2 = spot2[0].toUpperCase().codeUnitAt(0);
+    final col2 = int.tryParse(spot2.substring(1));
+
+    if (col1 == null || col2 == null) return false;
+
+    final rowDiff = (row1 - row2).abs();
+    final colDiff = (col1 - col2).abs();
+
+    // Horizontal adjacency: same row, columns difference is exactly 1
+    // Vertical adjacency: same column, rows difference is exactly 1
+    return (rowDiff == 0 && colDiff == 1) || (rowDiff == 1 && colDiff == 0);
   }
 
   int _compareByUpdatedOrCreated(ApplicationModel a, ApplicationModel b) {

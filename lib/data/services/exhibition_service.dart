@@ -191,10 +191,35 @@ class ExhibitionService {
     }
   }
 
-  /// Delete an exhibition.
+  /// Delete an exhibition and all related booth packages and spots.
   Future<bool> deleteExhibition(String exhibitionId) async {
     try {
-      await _firestore.collection(_collection).doc(exhibitionId).delete();
+      final batch = _firestore.batch();
+
+      // 1. Get all related booth packages
+      final packagesSnapshot = await _firestore
+          .collection('booth_packages')
+          .where('exhibitionId', isEqualTo: exhibitionId)
+          .get();
+      for (final doc in packagesSnapshot.docs) {
+        batch.delete(doc.reference);
+      }
+
+      // 2. Get all related booth spots
+      final spotsSnapshot = await _firestore
+          .collection('booth_spots')
+          .where('exhibitionId', isEqualTo: exhibitionId)
+          .get();
+      for (final doc in spotsSnapshot.docs) {
+        batch.delete(doc.reference);
+      }
+
+      // 3. Delete the main exhibition document
+      final exhibitionRef = _firestore.collection(_collection).doc(exhibitionId);
+      batch.delete(exhibitionRef);
+
+      // Commit the batch
+      await batch.commit();
       return true;
     } catch (e) {
       debugPrint('Error deleting exhibition: $e');

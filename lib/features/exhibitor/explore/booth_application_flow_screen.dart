@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
@@ -9,6 +10,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_empty_state.dart';
 import '../../../core/widgets/app_loading.dart';
+import '../../../core/widgets/bottom_sheet_date_field.dart';
 import '../../../data/models/application_model.dart';
 import '../../../data/models/booth_model.dart';
 import '../../../data/models/booth_spot_model.dart';
@@ -61,9 +63,14 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
     'Extra Table & Chair',
   ];
 
+  DateTime? _participationStartDate;
+  DateTime? _participationEndDate;
+
   @override
   void initState() {
     super.initState();
+    _participationStartDate = widget.exhibition.startDate;
+    _participationEndDate = widget.exhibition.endDate;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fetchData();
     });
@@ -254,6 +261,60 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
     super.dispose();
   }
 
+  Future<void> _selectParticipationDate(BuildContext context, bool isStart) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: isStart 
+          ? (_participationStartDate ?? widget.exhibition.startDate) 
+          : (_participationEndDate ?? widget.exhibition.endDate),
+      firstDate: widget.exhibition.startDate,
+      lastDate: widget.exhibition.endDate,
+      builder: (BuildContext context, Widget? child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.primaryAccent,
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: AppColors.primaryText,
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primaryText,
+              ),
+            ),
+            datePickerTheme: DatePickerThemeData(
+              backgroundColor: Colors.white,
+              headerBackgroundColor: Colors.white,
+              headerForegroundColor: AppColors.primaryText,
+              surfaceTintColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              dayStyle: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() {
+        if (isStart) {
+          _participationStartDate = picked;
+          if (_participationEndDate != null && _participationStartDate!.isAfter(_participationEndDate!)) {
+            _participationEndDate = _participationStartDate;
+          }
+        } else {
+          _participationEndDate = picked;
+          if (_participationStartDate != null && _participationEndDate!.isBefore(_participationStartDate!)) {
+            _participationStartDate = _participationEndDate;
+          }
+        }
+      });
+    }
+  }
+
   void _handleBack() {
     if (_currentStep > 0) {
       _pageController.previousPage(
@@ -286,6 +347,22 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
         context,
         'Booking is closed. You cannot submit an application for this exhibition.',
       );
+      return;
+    }
+
+    if (_participationStartDate == null || _participationEndDate == null) {
+      FeedbackHelper.showError(context, 'Please select participation dates.');
+      return;
+    }
+
+    if (_participationStartDate!.isAfter(_participationEndDate!)) {
+      FeedbackHelper.showError(context, 'Start date cannot be after end date.');
+      return;
+    }
+
+    if (_participationStartDate!.isBefore(widget.exhibition.startDate) ||
+        _participationEndDate!.isAfter(widget.exhibition.endDate)) {
+      FeedbackHelper.showError(context, 'Participation dates must be within the exhibition duration.');
       return;
     }
 
@@ -348,6 +425,8 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
       requirements: _selectedRequirements,
       status: 'Pending',
       createdAt: DateTime.now(),
+      participationStartDate: _participationStartDate,
+      participationEndDate: _participationEndDate,
     );
 
     if (!mounted) return;
@@ -496,6 +575,14 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
           text: 'Review Application',
           onPressed: () {
             if (_formKey.currentState!.validate()) {
+              if (_participationStartDate == null || _participationEndDate == null) {
+                FeedbackHelper.showError(context, 'Please select participation dates.');
+                return;
+              }
+              if (_participationStartDate!.isAfter(_participationEndDate!)) {
+                FeedbackHelper.showError(context, 'Start date cannot be after end date.');
+                return;
+              }
               _pageController.nextPage(
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeInOut,
@@ -1288,6 +1375,40 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
                   ],
                 ),
 
+              // Section 1.5: Participation Period
+              _buildFormSection(
+                title: 'Participation Period',
+                children: [
+                  Text(
+                    'Select your intended stay duration. The booth package price remains fixed.',
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      color: Colors.grey.shade500,
+                      fontWeight: FontWeight.w500,
+                      height: 1.3,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      BottomSheetDateField(
+                        innerLabel: 'Start Date',
+                        date: _participationStartDate ?? widget.exhibition.startDate,
+                        onTap: () => _selectParticipationDate(context, true),
+                        dateFormat: DateFormat('d MMM yyyy'),
+                      ),
+                      const SizedBox(width: 16),
+                      BottomSheetDateField(
+                        innerLabel: 'End Date',
+                        date: _participationEndDate ?? widget.exhibition.endDate,
+                        onTap: () => _selectParticipationDate(context, false),
+                        dateFormat: DateFormat('d MMM yyyy'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+
               // Section 2: Company Information
               _buildFormSection(
                 title: 'Company Information',
@@ -1680,6 +1801,13 @@ class _BoothApplicationFlowScreenState extends State<BoothApplicationFlowScreen>
                 _buildReviewDetailRow('Size', package.size),
                 const SizedBox(height: 12),
                 _buildReviewDetailRow('Price', 'RM ${package.price.toStringAsFixed(0)}', isPrice: true),
+                const SizedBox(height: 12),
+                _buildReviewDetailRow(
+                  'Participation Period',
+                  (_participationStartDate != null && _participationEndDate != null)
+                      ? '${_formatDate(_participationStartDate!)} - ${_formatDate(_participationEndDate!)}'
+                      : 'Full Event Duration',
+                ),
               ],
             ),
 

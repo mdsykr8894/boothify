@@ -18,6 +18,8 @@ class ApplicationModel {
   final String? paymentMethod;
   final DateTime? paidAt;
   final String? transactionId;
+  final DateTime? participationStartDate;
+  final DateTime? participationEndDate;
 
   ApplicationModel({
     required this.id,
@@ -37,6 +39,8 @@ class ApplicationModel {
     this.paymentMethod,
     this.paidAt,
     this.transactionId,
+    this.participationStartDate,
+    this.participationEndDate,
   });
 
   /// Parse Firestore document data to ApplicationModel.
@@ -59,6 +63,8 @@ class ApplicationModel {
       paymentMethod: data['paymentMethod'],
       paidAt: (data['paidAt'] as Timestamp?)?.toDate(),
       transactionId: data['transactionId'],
+      participationStartDate: (data['participationStartDate'] as Timestamp?)?.toDate(),
+      participationEndDate: (data['participationEndDate'] as Timestamp?)?.toDate(),
     );
   }
 
@@ -81,6 +87,8 @@ class ApplicationModel {
       'paymentMethod': paymentMethod,
       'paidAt': paidAt != null ? Timestamp.fromDate(paidAt!) : null,
       'transactionId': transactionId,
+      'participationStartDate': participationStartDate != null ? Timestamp.fromDate(participationStartDate!) : null,
+      'participationEndDate': participationEndDate != null ? Timestamp.fromDate(participationEndDate!) : null,
     };
   }
 
@@ -102,6 +110,8 @@ class ApplicationModel {
     String? paymentMethod,
     DateTime? paidAt,
     String? transactionId,
+    DateTime? participationStartDate,
+    DateTime? participationEndDate,
   }) {
     return ApplicationModel(
       id: id,
@@ -121,6 +131,8 @@ class ApplicationModel {
       paymentMethod: paymentMethod ?? this.paymentMethod,
       paidAt: paidAt ?? this.paidAt,
       transactionId: transactionId ?? this.transactionId,
+      participationStartDate: participationStartDate ?? this.participationStartDate,
+      participationEndDate: participationEndDate ?? this.participationEndDate,
     );
   }
 }

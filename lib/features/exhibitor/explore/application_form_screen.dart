@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_page_header.dart';
 import '../../../core/widgets/app_text_field.dart';
+import '../../../core/widgets/bottom_sheet_date_field.dart';
 import '../../../data/models/application_model.dart';
 import '../../../data/models/booth_model.dart';
 import '../../../data/models/booth_spot_model.dart';
@@ -46,6 +48,16 @@ class _ApplicationFormScreenState extends State<ApplicationFormScreen> {
     'Extra Table & Chair',
   ];
 
+  DateTime? _participationStartDate;
+  DateTime? _participationEndDate;
+
+  @override
+  void initState() {
+    super.initState();
+    _participationStartDate = widget.exhibition.startDate;
+    _participationEndDate = widget.exhibition.endDate;
+  }
+
   void _toggleRequirement(String req) {
     setState(() {
       if (_selectedRequirements.contains(req)) {
@@ -54,6 +66,60 @@ class _ApplicationFormScreenState extends State<ApplicationFormScreen> {
         _selectedRequirements.add(req);
       }
     });
+  }
+
+  Future<void> _selectParticipationDate(BuildContext context, bool isStart) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: isStart 
+          ? (_participationStartDate ?? widget.exhibition.startDate) 
+          : (_participationEndDate ?? widget.exhibition.endDate),
+      firstDate: widget.exhibition.startDate,
+      lastDate: widget.exhibition.endDate,
+      builder: (BuildContext context, Widget? child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.primaryAccent,
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: AppColors.primaryText,
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primaryText,
+              ),
+            ),
+            datePickerTheme: DatePickerThemeData(
+              backgroundColor: Colors.white,
+              headerBackgroundColor: Colors.white,
+              headerForegroundColor: AppColors.primaryText,
+              surfaceTintColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              dayStyle: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() {
+        if (isStart) {
+          _participationStartDate = picked;
+          if (_participationEndDate != null && _participationStartDate!.isAfter(_participationEndDate!)) {
+            _participationEndDate = _participationStartDate;
+          }
+        } else {
+          _participationEndDate = picked;
+          if (_participationStartDate != null && _participationEndDate!.isBefore(_participationStartDate!)) {
+            _participationStartDate = _participationEndDate;
+          }
+        }
+      });
+    }
   }
 
   void _handleSubmit() async {
@@ -67,6 +133,22 @@ class _ApplicationFormScreenState extends State<ApplicationFormScreen> {
     }
 
     if (!_formKey.currentState!.validate()) return;
+
+    if (_participationStartDate == null || _participationEndDate == null) {
+      FeedbackHelper.showError(context, 'Please select participation dates.');
+      return;
+    }
+
+    if (_participationStartDate!.isAfter(_participationEndDate!)) {
+      FeedbackHelper.showError(context, 'Start date cannot be after end date.');
+      return;
+    }
+
+    if (_participationStartDate!.isBefore(widget.exhibition.startDate) ||
+        _participationEndDate!.isAfter(widget.exhibition.endDate)) {
+      FeedbackHelper.showError(context, 'Participation dates must be within the exhibition duration.');
+      return;
+    }
 
     final authProvider = context.read<AuthProvider>();
     final user = authProvider.currentUser;
@@ -114,6 +196,8 @@ class _ApplicationFormScreenState extends State<ApplicationFormScreen> {
       requirements: _selectedRequirements,
       status: 'Pending',
       createdAt: DateTime.now(),
+      participationStartDate: _participationStartDate,
+      participationEndDate: _participationEndDate,
     );
 
     if (!mounted) return;
@@ -156,6 +240,38 @@ class _ApplicationFormScreenState extends State<ApplicationFormScreen> {
                     children: [
                       // Booth Summary Card
                       _buildSummaryCard(),
+                      const SizedBox(height: AppSpacing.xl),
+
+                      const Text(
+                        'Participation Period',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: AppSpacing.s),
+                      Text(
+                        'Select your intended stay duration. The booth package price remains fixed.',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.m),
+                      Row(
+                        children: [
+                          BottomSheetDateField(
+                            innerLabel: 'Start Date',
+                            date: _participationStartDate ?? widget.exhibition.startDate,
+                            onTap: () => _selectParticipationDate(context, true),
+                            dateFormat: DateFormat('d MMM yyyy'),
+                          ),
+                          const SizedBox(width: 16),
+                          BottomSheetDateField(
+                            innerLabel: 'End Date',
+                            date: _participationEndDate ?? widget.exhibition.endDate,
+                            onTap: () => _selectParticipationDate(context, false),
+                            dateFormat: DateFormat('d MMM yyyy'),
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: AppSpacing.xl),
 
                       const Text(

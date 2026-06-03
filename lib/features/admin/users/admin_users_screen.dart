@@ -7,6 +7,7 @@ import '../../../core/widgets/app_empty_state.dart';
 import '../../../core/widgets/app_filter_chips.dart';
 import '../../../core/widgets/app_loading.dart';
 import '../../../core/widgets/app_page_header.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../providers/user_provider.dart';
 import 'widgets/admin_user_card.dart';
 
@@ -19,13 +20,26 @@ class AdminUsersScreen extends StatefulWidget {
 
 class _AdminUsersScreenState extends State<AdminUsersScreen> {
   String _selectedFilter = 'All';
+  bool _hasFetched = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fetchUsers();
-    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final auth = context.watch<AuthProvider>();
+    if (!auth.isInitialized || auth.currentUser == null || auth.currentUser?.role != 'Admin') {
+      _hasFetched = false;
+    } else if (!_hasFetched) {
+      _hasFetched = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _fetchUsers();
+      });
+    }
   }
 
   void _fetchUsers() {

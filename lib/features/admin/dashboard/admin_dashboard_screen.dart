@@ -7,6 +7,7 @@ import '../../../core/widgets/app_loading.dart';
 import '../../../core/widgets/app_page_header.dart';
 import '../../../core/widgets/dashboard_summary_card.dart';
 import '../../../providers/application_provider.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../providers/exhibition_provider.dart';
 import '../../../providers/user_provider.dart';
 import '../../shared/wrappers/admin_wrapper.dart';
@@ -19,12 +20,26 @@ class AdminDashboardScreen extends StatefulWidget {
 }
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
+  bool _hasFetched = false;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fetchData();
-    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final auth = context.watch<AuthProvider>();
+    if (!auth.isInitialized || auth.currentUser == null || auth.currentUser?.role != 'Admin') {
+      _hasFetched = false;
+    } else if (!_hasFetched) {
+      _hasFetched = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _fetchData();
+      });
+    }
   }
 
   void _fetchData() {

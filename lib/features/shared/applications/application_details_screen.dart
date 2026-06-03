@@ -93,8 +93,7 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
 
     final bool canEdit = user != null && (
       user.role == 'Admin' || 
-      (user.role == 'Exhibitor' && user.uid == latestApp.userId && 
-        (latestApp.status == 'Pending' || latestApp.status == 'Rejected'))
+      (user.role == 'Exhibitor' && user.uid == latestApp.userId && latestApp.status == 'Pending')
     );
 
     final bool isOrganizer = user?.role == 'Organizer';
@@ -214,7 +213,7 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
                       _buildInfoRow(
                         label: 'Booth Spot',
                         value: 'Booth ${latestApp.boothNumber}',
-                        showDivider: package != null,
+                        showDivider: true,
                       ),
                       if (package != null) ...[
                         _buildInfoRow(
@@ -230,9 +229,16 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
                         _buildInfoRow(
                           label: 'Price',
                           value: 'RM ${package.price.toStringAsFixed(0)}',
-                          showDivider: false,
+                          showDivider: true,
                         ),
                       ],
+                      _buildInfoRow(
+                        label: 'Participation Period',
+                        value: (latestApp.participationStartDate != null && latestApp.participationEndDate != null)
+                            ? '${DateFormatHelper.formatDate(latestApp.participationStartDate!)} - ${DateFormatHelper.formatDate(latestApp.participationEndDate!)}'
+                            : 'Full Event Duration',
+                        showDivider: false,
+                      ),
                     ]),
 
                     // G. Included Amenities Section

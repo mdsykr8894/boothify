@@ -8,6 +8,7 @@ import '../../../core/widgets/app_hero_card.dart';
 import '../../../core/widgets/app_loading.dart';
 import '../../../data/models/exhibition_model.dart';
 import '../../../data/models/user_model.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../providers/exhibition_provider.dart';
 import '../../../providers/user_provider.dart';
 import 'widgets/exhibition_card.dart';
@@ -34,12 +35,29 @@ class _ExploreScreenState extends State<ExploreScreen> {
         : user.name;
   }
 
+  bool _hasFetchedUsers = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fetchExhibitions();
+      context.read<ExhibitionProvider>().fetchPublishedExhibitions();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final auth = context.watch<AuthProvider>();
+    if (!auth.isInitialized) {
+      _hasFetchedUsers = false;
+    } else if (!_hasFetchedUsers) {
+      _hasFetchedUsers = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        context.read<UserProvider>().fetchAllUsers();
+      });
+    }
   }
 
   void _fetchExhibitions() {

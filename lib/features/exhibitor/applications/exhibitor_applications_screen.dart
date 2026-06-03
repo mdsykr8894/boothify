@@ -23,13 +23,26 @@ class MyApplicationsScreen extends StatefulWidget {
 
 class _MyApplicationsScreenState extends State<MyApplicationsScreen> {
   String _selectedFilter = 'All';
+  String? _lastFetchedUserId;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fetchApplications();
-    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final user = context.watch<AuthProvider>().currentUser;
+    if (user == null) {
+      _lastFetchedUserId = null;
+    } else if (user.uid != _lastFetchedUserId) {
+      _lastFetchedUserId = user.uid;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _fetchApplications();
+      });
+    }
   }
 
   void _fetchApplications() {

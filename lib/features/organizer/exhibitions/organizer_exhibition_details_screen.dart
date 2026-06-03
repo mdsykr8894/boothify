@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/base_dialog.dart';
 import '../../../core/utils/feedback_helper.dart';
 import '../../../core/utils/date_format_helper.dart';
@@ -158,7 +159,7 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
           ],
         ),
       ),
-      bottomNavigationBar: isAdmin ? _buildBottomPublishBar(context, latestExhibition) : null,
+      bottomNavigationBar: canEdit ? _buildBottomActionBar(context, latestExhibition) : null,
     );
   }
 
@@ -983,17 +984,82 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
     }
   }
 
-  Widget _buildBottomPublishBar(BuildContext context, ExhibitionModel ex) {
+  void _handleDelete(BuildContext context, ExhibitionModel ex) async {
+    final auth = context.read<AuthProvider>();
+    final user = auth.currentUser;
+    if (user == null) return;
+
+    // 1. Role verification check (Owner Organizer or Admin)
+    if (user.role == 'Organizer' && user.uid != ex.organizerId) {
+      FeedbackHelper.showError(
+        context,
+        'You are not authorized to delete this exhibition.',
+      );
+      return;
+    }
+
+    // 2. Fetch applications count
+    final applicationProvider = context.read<ApplicationProvider>();
+    final List<ApplicationModel> apps;
+    if (user.role == 'Admin') {
+      apps = applicationProvider.allApplications.where((a) => a.exhibitionId == ex.id).toList();
+    } else {
+      apps = applicationProvider.organizerApplications.where((a) => a.exhibitionId == ex.id).toList();
+    }
+
+    // 3. Block deletion if applications exist
+    if (apps.isNotEmpty) {
+      FeedbackHelper.showWarning(
+        context,
+        'This exhibition cannot be deleted because it already has applications. Please manage or close the applications instead.',
+      );
+      return;
+    }
+
+    // 4. Show confirmation dialog
+    final confirm = await BaseDialog.show<bool>(
+      context: context,
+      title: 'Delete Exhibition',
+      message: 'Are you sure you want to delete this exhibition? This action cannot be undone. This will also delete its booth packages and booth spots.',
+      variant: DialogVariant.destructive,
+      primaryLabel: 'Delete',
+      secondaryLabel: 'Cancel',
+      onPrimaryPressed: () => Navigator.pop(context, true),
+      onSecondaryPressed: () => Navigator.pop(context, false),
+    );
+
+    if (confirm == true && context.mounted) {
+      final provider = context.read<ExhibitionProvider>();
+      final success = await provider.deleteExhibition(ex.id, ex.organizerId);
+
+      if (context.mounted) {
+        if (success) {
+          FeedbackHelper.showSuccess(
+            context,
+            'Exhibition deleted successfully!',
+          );
+          context.pop(); // Navigate back to exhibition list
+        } else {
+          FeedbackHelper.showError(
+            context,
+            provider.errorMessage ?? 'Deletion failed.',
+          );
+        }
+      }
+    }
+  }
+
+  Widget _buildBottomActionBar(BuildContext context, ExhibitionModel ex) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(28), // Fixed layout value: top radius 28
+          topLeft: Radius.circular(28),
           topRight: Radius.circular(28),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05), // Fixed layout value: subtle top shadow only
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -4),
             spreadRadius: 0,
@@ -1006,46 +1072,40 @@ class _OrganizerExhibitionDetailsScreenState extends State<OrganizerExhibitionDe
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 16), // Fixed layout value: padding EdgeInsets.fromLTRB(24, 20, 24, safeAreaBottom + 16)
-          child: ex.isPublished
-              ? OutlinedButton(
-                  onPressed: () => _showPublishConfirmation(context, ex),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 56), // Fixed layout value: height 56
-                    backgroundColor: Colors.white, // Fixed layout value: white background
-                    side: BorderSide(color: Colors.grey.shade300, width: 1.2), // Fixed layout value: light grey border
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16), // Fixed layout value: radius 16
-                    ),
-                  ),
-                  child: const Text(
-                    'Unpublish Event',
-                    style: TextStyle(
-                      color: AppColors.primaryText, // Fixed layout value: dark text, no red/pink
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                )
-              : ElevatedButton(
-                  onPressed: () => _showPublishConfirmation(context, ex),
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 56), // Fixed layout value: height 56
-                    backgroundColor: AppColors.primaryAccent, // Fixed layout value: pink/red fill
-                    foregroundColor: Colors.white, // Fixed layout value: white text
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16), // Fixed layout value: radius 16
-                    ),
-                  ),
-                  child: const Text(
-                    'Publish Event',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+          child: Row(
+            children: [
+              Expanded(
+                child: AppButton(
+                  text: 'Delete',
+                  isSecondary: true,
+                  color: AppColors.primaryAccent,
+                  height: 56,
+                  borderRadius: 16,
+                  onPressed: () => _handleDelete(context, ex),
                 ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: ex.isPublished
+                    ? AppButton(
+                        text: 'Unpublish Event',
+                        isSecondary: true,
+                        color: AppColors.primaryText,
+                        height: 56,
+                        borderRadius: 16,
+                        onPressed: () => _showPublishConfirmation(context, ex),
+                      )
+                    : AppButton(
+                        text: 'Publish Event',
+                        color: AppColors.primaryAccent,
+                        height: 56,
+                        borderRadius: 16,
+                        onPressed: () => _showPublishConfirmation(context, ex),
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
     );

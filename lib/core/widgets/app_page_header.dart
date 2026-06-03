@@ -38,7 +38,7 @@ class AppPageHeader extends StatelessWidget {
                   ),
                 ),
               ),
-              if (actions != null) ...actions!,
+              ...?actions,
             ],
           ),
         ),
