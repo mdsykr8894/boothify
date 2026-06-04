@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../data/models/exhibition_model.dart';
 import '../data/services/exhibition_service.dart';
+import '../data/services/booth_spot_service.dart';
 
 class ExhibitionProvider extends ChangeNotifier {
   final ExhibitionService _service = ExhibitionService();
@@ -162,6 +163,22 @@ class ExhibitionProvider extends ChangeNotifier {
     _errorMessage = null;
 
     try {
+      if (isPublished) {
+        final spots = await BoothSpotService().fetchBoothSpots(exhibitionId);
+        if (spots.isEmpty) {
+          _errorMessage = 'Please create a floor plan before publishing this exhibition.';
+          _setLoading(false);
+          return false;
+        }
+        
+        final assignedSpots = spots.where((s) => s.boothPackageId.trim().isNotEmpty).toList();
+        if (assignedSpots.isEmpty) {
+          _errorMessage = 'Please assign at least one booth package before publishing this exhibition.';
+          _setLoading(false);
+          return false;
+        }
+      }
+
       final success = await _service.togglePublish(
         exhibitionId,
         isPublished,

@@ -7,10 +7,10 @@ import '../../../../core/widgets/app_bottom_sheet_scaffold.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/bottom_sheet_date_field.dart';
 import '../../../../data/models/application_model.dart';
-import '../../../../data/models/booth_model.dart';
+import '../../../../data/models/booth_package_model.dart';
 import '../../../../data/models/booth_spot_model.dart';
 import '../../../../providers/application_provider.dart';
-import '../../../../providers/booth_provider.dart';
+import '../../../../providers/booth_package_provider.dart';
 import '../../../../providers/booth_spot_provider.dart';
 import '../../../../providers/exhibition_provider.dart';
 import '../../../../core/utils/feedback_helper.dart';
@@ -326,7 +326,7 @@ class _EditApplicationBottomSheetState
     );
   }
 
-  Widget _buildSummaryCard(BoothSpotModel spot, BoothModel? package) {
+  Widget _buildSummaryCard(BoothSpotModel spot, BoothPackageModel? package) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 12),
@@ -380,7 +380,7 @@ class _EditApplicationBottomSheetState
 
   @override
   Widget build(BuildContext context) {
-    final boothProvider = context.watch<BoothProvider>();
+    final boothProvider = context.watch<BoothPackageProvider>();
     final spotProvider = context.watch<BoothSpotProvider>();
 
     final exhibitions = context.watch<ExhibitionProvider>().allExhibitions;

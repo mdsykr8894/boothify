@@ -12,7 +12,7 @@ import '../../../core/widgets/app_page_header.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../../../core/widgets/bottom_sheet_date_field.dart';
 import '../../../data/models/application_model.dart';
-import '../../../data/models/booth_model.dart';
+import '../../../data/models/booth_package_model.dart';
 import '../../../data/models/booth_spot_model.dart';
 import '../../../data/models/exhibition_model.dart';
 import '../../../providers/application_provider.dart';
@@ -22,7 +22,7 @@ import '../../../core/utils/feedback_helper.dart';
 class ApplicationFormScreen extends StatefulWidget {
   final ExhibitionModel exhibition;
   final BoothSpotModel boothSpot;
-  final BoothModel boothPackage;
+  final BoothPackageModel boothPackage;
 
   const ApplicationFormScreen({
     super.key,

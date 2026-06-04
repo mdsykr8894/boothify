@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class BoothModel {
+class BoothPackageModel {
   final String id;
   final String exhibitionId;
   final String name;
@@ -9,7 +9,7 @@ class BoothModel {
   final List<String> amenities;
   final DateTime? createdAt;
 
-  BoothModel({
+  BoothPackageModel({
     required this.id,
     required this.exhibitionId,
     required this.name,
@@ -19,9 +19,9 @@ class BoothModel {
     this.createdAt,
   });
 
-  // Convert Firestore document data into BoothModel.
-  factory BoothModel.fromMap(Map<String, dynamic> data, String documentId) {
-    return BoothModel(
+  // Convert Firestore document data into BoothPackageModel.
+  factory BoothPackageModel.fromMap(Map<String, dynamic> data, String documentId) {
+    return BoothPackageModel(
       id: documentId,
       exhibitionId: data['exhibitionId'] ?? '',
       name: data['name'] ?? '',
@@ -32,7 +32,7 @@ class BoothModel {
     );
   }
 
-  // Convert BoothModel into Firestore-friendly map.
+  // Convert BoothPackageModel into Firestore-friendly map.
   Map<String, dynamic> toMap() {
     return {
       'exhibitionId': exhibitionId,
@@ -46,8 +46,8 @@ class BoothModel {
     };
   }
 
-  // Create a new BoothModel with updated values.
-  BoothModel copyWith({
+  // Create a new BoothPackageModel with updated values.
+  BoothPackageModel copyWith({
     String? exhibitionId,
     String? name,
     String? size,
@@ -55,7 +55,7 @@ class BoothModel {
     List<String>? amenities,
     DateTime? createdAt,
   }) {
-    return BoothModel(
+    return BoothPackageModel(
       id: id,
       exhibitionId: exhibitionId ?? this.exhibitionId,
       name: name ?? this.name,

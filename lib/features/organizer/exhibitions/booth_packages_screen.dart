@@ -6,7 +6,7 @@ import '../../../core/widgets/app_empty_state.dart';
 import '../../../core/widgets/app_loading.dart';
 import '../../../core/widgets/app_page_header.dart';
 import '../../../data/models/exhibition_model.dart';
-import '../../../providers/booth_provider.dart';
+import '../../../providers/booth_package_provider.dart';
 import '../../../providers/booth_spot_provider.dart';
 import 'widgets/booth_package_bottom_sheet.dart';
 import 'widgets/booth_package_card.dart';
@@ -29,7 +29,7 @@ class _BoothPackagesScreenState extends State<BoothPackagesScreen> {
 
     // Load booth packages and spots after first frame.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<BoothProvider>().fetchBoothPackages(widget.exhibition.id);
+      context.read<BoothPackageProvider>().fetchBoothPackages(widget.exhibition.id);
       context.read<BoothSpotProvider>().fetchBoothSpots(widget.exhibition.id);
     });
   }
@@ -50,7 +50,7 @@ class _BoothPackagesScreenState extends State<BoothPackagesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final boothProvider = context.watch<BoothProvider>();
+    final boothProvider = context.watch<BoothPackageProvider>();
     final packages = boothProvider.boothPackages;
     final isLoading = boothProvider.isLoading;
 

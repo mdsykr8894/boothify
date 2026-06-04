@@ -1,14 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
-import '../models/booth_model.dart';
+import '../models/booth_package_model.dart';
 import 'exhibition_service.dart';
 
-class BoothService {
+class BoothPackageService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final String _collection = 'booth_packages';
   final ExhibitionService _exhibitionService = ExhibitionService();
 
-  Future<List<BoothModel>> fetchBoothPackages(String exhibitionId) async {
+  Future<List<BoothPackageModel>> fetchBoothPackages(String exhibitionId) async {
     try {
       // Fetch booth packages for one exhibition.
       final querySnapshot = await _firestore
@@ -16,9 +16,9 @@ class BoothService {
           .where('exhibitionId', isEqualTo: exhibitionId)
           .get();
 
-      // Convert Firestore documents into BoothModel list.
+      // Convert Firestore documents into BoothPackageModel list.
       return querySnapshot.docs
-          .map((doc) => BoothModel.fromMap(doc.data(), doc.id))
+          .map((doc) => BoothPackageModel.fromMap(doc.data(), doc.id))
           .toList();
     } catch (e) {
       debugPrint('Error fetching booth packages: $e');
@@ -26,7 +26,7 @@ class BoothService {
     }
   }
 
-  Future<bool> createBoothPackage(BoothModel booth) async {
+  Future<bool> createBoothPackage(BoothPackageModel booth) async {
     try {
       // Create new booth package document.
       await _firestore.collection(_collection).add(booth.toMap());
@@ -41,7 +41,7 @@ class BoothService {
     }
   }
 
-  Future<bool> updateBoothPackage(BoothModel booth) async {
+  Future<bool> updateBoothPackage(BoothPackageModel booth) async {
     try {
       // Update existing booth package document.
       await _firestore

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/models/application_model.dart';
-import '../../data/models/booth_model.dart';
+import '../../data/models/booth_package_model.dart';
 import '../../data/models/booth_spot_model.dart';
 import '../../data/models/exhibition_model.dart';
 import '../../data/models/user_model.dart';
@@ -282,7 +282,7 @@ class AppRouter {
             return ApplicationFormScreen(
               exhibition: data['exhibition'] as ExhibitionModel,
               boothSpot: data['boothSpot'] as BoothSpotModel,
-              boothPackage: data['boothPackage'] as BoothModel,
+              boothPackage: data['boothPackage'] as BoothPackageModel,
             );
           },
         ),

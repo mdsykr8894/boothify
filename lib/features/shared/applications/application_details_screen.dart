@@ -6,11 +6,11 @@ import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_page_header.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../data/models/application_model.dart';
-import '../../../data/models/booth_model.dart';
+import '../../../data/models/booth_package_model.dart';
 import '../../../data/models/booth_spot_model.dart';
 import '../../../providers/application_provider.dart';
 import '../../../providers/auth_provider.dart';
-import '../../../providers/booth_provider.dart';
+import '../../../providers/booth_package_provider.dart';
 import '../../../providers/booth_spot_provider.dart';
 import '../../../providers/user_provider.dart';
 import '../../../core/widgets/base_dialog.dart';
@@ -42,7 +42,7 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
     // Load supporting data after first frame.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context
-          .read<BoothProvider>()
+          .read<BoothPackageProvider>()
           .fetchBoothPackages(widget.application.exhibitionId);
       context.read<UserProvider>().fetchAllUsers();
       context
@@ -70,7 +70,7 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
       ),
     );
 
-    final boothProvider = context.watch<BoothProvider>();
+    final boothProvider = context.watch<BoothPackageProvider>();
     final spotProvider = context.watch<BoothSpotProvider>();
     final userProvider = context.watch<UserProvider>();
 
@@ -87,7 +87,7 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
     );
 
     // Resolve booth package from selected spot.
-    final BoothModel? package = spot.boothPackageId.isNotEmpty
+    final BoothPackageModel? package = spot.boothPackageId.isNotEmpty
         ? boothProvider.boothPackages
             .where((p) => p.id == spot.boothPackageId)
             .firstOrNull
@@ -103,12 +103,12 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
     final exhibitionName = exhibition?.name ?? 'Exhibition';
     final applicantName = applicantUser?.name ?? latestApp.companyName;
 
-    // Allow edit for admin or pending owner.
+    // Allow edit for admin or pending/rejected owner.
     final bool canEdit = user != null &&
         (user.role == 'Admin' ||
             (user.role == 'Exhibitor' &&
                 user.uid == latestApp.userId &&
-                latestApp.status == 'Pending'));
+                (latestApp.status == 'Pending' || latestApp.status == 'Rejected')));
 
     final bool isOrganizer = user?.role == 'Organizer';
     final bool isAdmin = user?.role == 'Admin';

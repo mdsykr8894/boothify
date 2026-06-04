@@ -4,7 +4,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../data/models/application_model.dart';
 import '../../../../providers/application_provider.dart';
-import '../../../../providers/booth_provider.dart';
+import '../../../../providers/booth_package_provider.dart';
 import '../../../../providers/booth_spot_provider.dart';
 import '../../../../core/utils/feedback_helper.dart';
 
@@ -81,7 +81,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final boothProvider = context.watch<BoothProvider>();
+    final boothProvider = context.watch<BoothPackageProvider>();
     final spotProvider = context.watch<BoothSpotProvider>();
 
     // Resolve booth package details.

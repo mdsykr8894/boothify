@@ -5,9 +5,10 @@ import '../core/constants/app_colors.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/application_provider.dart';
 import '../providers/auth_provider.dart';
-import '../providers/booth_provider.dart';
+import '../providers/booth_package_provider.dart';
 import '../providers/booth_spot_provider.dart';
 import '../providers/exhibition_provider.dart';
+import '../providers/notification_provider.dart';
 import '../providers/user_provider.dart';
 import 'routes/app_router.dart';
 import 'theme/app_theme.dart';
@@ -42,10 +43,11 @@ class _BoothifyAppState extends State<BoothifyApp> {
       providers: [
         ChangeNotifierProvider.value(value: _authProvider),
         ChangeNotifierProvider(create: (_) => ExhibitionProvider()),
-        ChangeNotifierProvider(create: (_) => BoothProvider()),
+        ChangeNotifierProvider(create: (_) => BoothPackageProvider()),
         ChangeNotifierProvider(create: (_) => BoothSpotProvider()),
         ChangeNotifierProvider(create: (_) => ApplicationProvider()),
         ChangeNotifierProvider(create: (_) => UserProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
       ],
       child: Consumer<AuthProvider>(
         builder: (context, auth, child) {

@@ -8,12 +8,45 @@ import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_page_header.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../providers/notification_provider.dart';
 import '../../../core/widgets/base_dialog.dart';
 import '../../../core/utils/feedback_helper.dart';
+import '../notifications/widgets/notification_bell_button.dart';
 
 // Display user profile and account menu.
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  NotificationProvider? _notificationProvider;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    
+    // Watch AuthProvider to subscribe/unsubscribe based on authentication state.
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.currentUser;
+    
+    _notificationProvider ??= context.read<NotificationProvider>();
+    
+    if (user != null) {
+      _notificationProvider?.subscribeToNotifications(user.uid);
+    } else {
+      _notificationProvider?.unsubscribe();
+    }
+  }
+
+  @override
+  void dispose() {
+    // Unsubscribe safely when the profile screen is destroyed using the stored reference.
+    _notificationProvider?.unsubscribe();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,10 +63,7 @@ class ProfileScreen extends StatelessWidget {
               actions: user == null
                   ? null
                   : [
-                      HeaderActionButton(
-                        onPressed: () => context.push(AppRoutes.notifications),
-                        icon: Icons.notifications_none_rounded,
-                      ),
+                      const NotificationBellButton(),
                     ],
             ),
             Expanded(
@@ -63,7 +93,7 @@ class ProfileScreen extends StatelessWidget {
                       const SizedBox(height: 24),
 
                       // Show login or logout action.
-                      _buildActionButton(context, user),
+                      _buildActionButton(user),
                       const SizedBox(height: AppSpacing.xl),
                     ],
                   ),
@@ -166,7 +196,7 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButton(BuildContext context, dynamic user) {
+  Widget _buildActionButton(dynamic user) {
     if (user == null) {
       return AppButton(
         text: 'Log In / Sign Up',
@@ -190,14 +220,20 @@ class ProfileScreen extends StatelessWidget {
           primaryLabel: 'Log Out',
           secondaryLabel: 'Cancel',
           onPrimaryPressed: () async {
+            // Unsubscribe from notifications first to prevent state mismatches.
+            _notificationProvider?.unsubscribe();
+
+            // Capture authProvider before any async gaps.
+            final authProvider = context.read<AuthProvider>();
+
+            // Close dialog.
             Navigator.pop(context);
 
             // Sign out current user.
-            await context.read<AuthProvider>().signOut();
+            await authProvider.signOut();
 
-            if (context.mounted) {
-              context.go(AppRoutes.root);
-            }
+            if (!mounted) return;
+            context.go(AppRoutes.root);
           },
         );
       },

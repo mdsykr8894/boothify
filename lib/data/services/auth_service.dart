@@ -1,10 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
+import 'notification_service.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final NotificationService _notificationService = NotificationService();
 
   // Listen to Firebase authentication changes.
   Stream<User?> get authStateChanges => _auth.authStateChanges();
@@ -87,7 +90,26 @@ class AuthService {
           userModel.toMap(),
         );
 
+    // Trigger admin notification safely in the background.
+    _triggerUserRegisteredNotification(userModel);
+
     return userModel;
+  }
+
+  void _triggerUserRegisteredNotification(UserModel user) async {
+    try {
+      await _notificationService.sendNotificationsToAdmins(
+        title: 'New User Registered',
+        body: '${user.name} has registered as ${user.role}.',
+        type: 'admin_user_registered',
+        relatedId: user.uid,
+        relatedType: 'user',
+        senderName: user.name,
+        excludedUserIds: [user.uid],
+      );
+    } catch (e) {
+      debugPrint('Error triggering user registered notification: $e');
+    }
   }
 
   Future<void> signOut() async {

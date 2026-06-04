@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/application_model.dart';
-import '../models/booth_model.dart';
+import '../models/booth_package_model.dart';
 import '../models/booth_spot_model.dart';
 import '../models/exhibition_model.dart';
 import '../models/user_model.dart';
@@ -556,7 +556,7 @@ class DatabaseSeeder {
     });
   }
 
-  static List<BoothModel> _buildBoothPackages({
+  static List<BoothPackageModel> _buildBoothPackages({
     required DateTime now,
     required List<String> exhibitionIds,
   }) {
@@ -603,14 +603,14 @@ class DatabaseSeeder {
       ),
     ];
 
-    final boothPackages = <BoothModel>[];
+    final boothPackages = <BoothPackageModel>[];
 
     for (final exhibitionId in exhibitionIds) {
       for (int i = 0; i < templates.length; i++) {
         final template = templates[i];
 
         boothPackages.add(
-          BoothModel(
+          BoothPackageModel(
             id: '${exhibitionId}_package_${i + 1}',
             exhibitionId: exhibitionId,
             name: template.name,
@@ -629,7 +629,7 @@ class DatabaseSeeder {
   static List<BoothSpotModel> _buildBoothSpots({
     required DateTime now,
     required List<String> exhibitionIds,
-    required List<BoothModel> boothPackages,
+    required List<BoothPackageModel> boothPackages,
   }) {
     final spots = <BoothSpotModel>[];
 

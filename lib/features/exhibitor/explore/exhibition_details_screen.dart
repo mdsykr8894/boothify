@@ -8,10 +8,10 @@ import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../data/models/exhibition_model.dart';
-import '../../../data/models/booth_model.dart';
+import '../../../data/models/booth_package_model.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/user_provider.dart';
-import '../../../providers/booth_provider.dart';
+import '../../../providers/booth_package_provider.dart';
 import '../../../providers/booth_spot_provider.dart';
 import '../../../core/utils/feedback_helper.dart';
 
@@ -52,7 +52,7 @@ class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
     // Fetch booth spots and packages after screen loads.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<BoothSpotProvider>().fetchBoothSpots(widget.exhibition.id);
-      context.read<BoothProvider>().fetchBoothPackages(widget.exhibition.id);
+      context.read<BoothPackageProvider>().fetchBoothPackages(widget.exhibition.id);
     });
   }
 
@@ -301,7 +301,7 @@ class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
   }
 
   Widget _buildPublicPackageItem(
-    BoothModel package,
+    BoothPackageModel package,
     bool isLast, {
     bool isCheapest = false,
   }) {
@@ -445,7 +445,7 @@ class _ExhibitionDetailsScreenState extends State<ExhibitionDetailsScreen> {
     final authProvider = context.watch<AuthProvider>();
     final userProvider = context.watch<UserProvider>();
     final spotProvider = context.watch<BoothSpotProvider>();
-    final boothProvider = context.watch<BoothProvider>();
+    final boothProvider = context.watch<BoothPackageProvider>();
 
     // Calculate sticky app bar opacity from scroll offset.
     final double appBarOpacity = (_scrollOffset / 150.0).clamp(0.0, 1.0);

@@ -173,4 +173,18 @@ class BoothSpotService {
       return false;
     }
   }
+
+  Future<bool> hasFloorPlan(String exhibitionId) async {
+    try {
+      final snapshot = await _firestore
+          .collection(_collection)
+          .where('exhibitionId', isEqualTo: exhibitionId)
+          .limit(1)
+          .get();
+      return snapshot.docs.isNotEmpty;
+    } catch (e) {
+      debugPrint('Error checking floor plan existence: $e');
+      return false;
+    }
+  }
 }

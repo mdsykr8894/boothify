@@ -3,12 +3,12 @@ import 'package:provider/provider.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/widgets/app_bottom_sheet_scaffold.dart';
-import '../../../../data/models/booth_model.dart';
-import '../../../../providers/booth_provider.dart';
+import '../../../../data/models/booth_package_model.dart';
+import '../../../../providers/booth_package_provider.dart';
 
 class BoothPackageBottomSheet extends StatefulWidget {
   final String exhibitionId;
-  final BoothModel? package;
+  final BoothPackageModel? package;
 
   const BoothPackageBottomSheet({
     super.key,
@@ -130,7 +130,7 @@ class _BoothPackageBottomSheetState extends State<BoothPackageBottomSheet> {
     }
 
     // 2. Duplicate Check
-    final provider = context.read<BoothProvider>();
+    final provider = context.read<BoothPackageProvider>();
     final isDuplicate = provider.boothPackages.any((p) {
       final matchesName = p.name.trim().toLowerCase() == name.toLowerCase();
       if (widget.package == null) {
@@ -173,7 +173,7 @@ class _BoothPackageBottomSheetState extends State<BoothPackageBottomSheet> {
 
     if (widget.package == null) {
       // Create mode
-      final newPackage = BoothModel(
+      final newPackage = BoothPackageModel(
         id: '',
         exhibitionId: widget.exhibitionId,
         name: name,
@@ -207,7 +207,7 @@ class _BoothPackageBottomSheetState extends State<BoothPackageBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final isLoading = context.watch<BoothProvider>().isLoading;
+    final isLoading = context.watch<BoothPackageProvider>().isLoading;
 
     return AppBottomSheetScaffold(
       title: widget.package == null ? 'New Booth Package' : 'Edit Booth Package',

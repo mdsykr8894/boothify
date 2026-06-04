@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../../data/models/booth_model.dart';
-import '../../../../providers/booth_provider.dart';
+import '../../../../data/models/booth_package_model.dart';
+import '../../../../providers/booth_package_provider.dart';
 import '../../../../providers/booth_spot_provider.dart';
 import '../../../../core/widgets/base_dialog.dart';
 import 'booth_package_bottom_sheet.dart';
 import '../../../../core/utils/feedback_helper.dart';
 
 class BoothPackageCard extends StatelessWidget {
-  final BoothModel package;
+  final BoothPackageModel package;
   final String exhibitionId;
 
   const BoothPackageCard({
@@ -60,7 +60,7 @@ class BoothPackageCard extends StatelessWidget {
       secondaryLabel: 'Cancel',
       onPrimaryPressed: () async {
         Navigator.pop(context);
-        final provider = context.read<BoothProvider>();
+        final provider = context.read<BoothPackageProvider>();
         final success = await provider.deleteBoothPackage(package.id, exhibitionId);
         if (context.mounted) {
           if (success) {

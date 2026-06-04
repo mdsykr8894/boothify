@@ -13,12 +13,12 @@ import '../../../core/widgets/app_empty_state.dart';
 import '../../../core/widgets/app_loading.dart';
 import '../../../core/widgets/bottom_sheet_date_field.dart';
 import '../../../data/models/application_model.dart';
-import '../../../data/models/booth_model.dart';
+import '../../../data/models/booth_package_model.dart';
 import '../../../data/models/booth_spot_model.dart';
 import '../../../data/models/exhibition_model.dart';
 import '../../../providers/application_provider.dart';
 import '../../../providers/auth_provider.dart';
-import '../../../providers/booth_provider.dart';
+import '../../../providers/booth_package_provider.dart';
 import '../../../providers/booth_spot_provider.dart';
 import 'widgets/public_booth_spot_card.dart';
 import '../../../core/utils/feedback_helper.dart';
@@ -105,7 +105,7 @@ class _BoothApplicationFlowScreenState
     context.read<BoothSpotProvider>().fetchBoothSpots(widget.exhibition.id);
 
     // Load booth packages for this exhibition.
-    context.read<BoothProvider>().fetchBoothPackages(widget.exhibition.id);
+    context.read<BoothPackageProvider>().fetchBoothPackages(widget.exhibition.id);
   }
 
   int getRowIndex(String spotNumber) {
@@ -178,8 +178,8 @@ class _BoothApplicationFlowScreenState
     // Count booth spot status summary.
     final int selectedCount = _selectedSpot != null ? 1 : 0;
     final int availableCount =
-        spots.where((s) => s.status == 'Available').length - selectedCount;
-    final int bookedCount = spots.where((s) => s.status != 'Available').length;
+        spots.where((s) => s.status == 'Available' && s.boothPackageId.isNotEmpty).length - selectedCount;
+    final int bookedCount = spots.where((s) => s.status != 'Available' || (s.status == 'Available' && s.boothPackageId.isEmpty)).length;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -482,7 +482,7 @@ class _BoothApplicationFlowScreenState
     if (!mounted) return;
 
     // Find booth package connected to selected spot.
-    final boothProvider = context.read<BoothProvider>();
+    final boothProvider = context.read<BoothPackageProvider>();
     final package = boothProvider.boothPackages
         .where((p) => p.id == _selectedSpot!.boothPackageId)
         .firstOrNull;
@@ -644,7 +644,7 @@ class _BoothApplicationFlowScreenState
       case 0:
         return AppButton(
           text: _selectedSpot == null ? 'Select a Booth' : 'Continue',
-          onPressed: _selectedSpot == null
+          onPressed: (_selectedSpot == null || _selectedSpot!.boothPackageId.isEmpty)
               ? null
               : () {
                   // Require login before continuing.
@@ -734,7 +734,7 @@ class _BoothApplicationFlowScreenState
   Widget _buildSelectBoothStep() {
     // Get booth data from providers.
     final spotProvider = context.watch<BoothSpotProvider>();
-    final boothProvider = context.watch<BoothProvider>();
+    final boothProvider = context.watch<BoothPackageProvider>();
 
     final spots = spotProvider.boothSpots;
     final isLoading = spotProvider.isLoading || boothProvider.isLoading;
@@ -834,6 +834,7 @@ class _BoothApplicationFlowScreenState
       // Build selectable booth tile.
       final isSelected = _selectedSpot?.id == spot.id;
       final isAvailable = spot.status == 'Available';
+      final isUnassigned = spot.boothPackageId.isEmpty;
 
       return Container(
         width: 145,
@@ -842,16 +843,23 @@ class _BoothApplicationFlowScreenState
         child: PublicBoothSpotCard(
           spot: spot,
           isSelected: isSelected,
-          onTap: isAvailable
-              ? (widget.exhibition.isBookingOpen
-                  ? () => setState(() => _selectedSpot = spot)
-                  : () {
-                      FeedbackHelper.showWarning(
-                        context,
-                        'Booking is currently closed for this exhibition.',
-                      );
-                    })
-              : null,
+          onTap: isUnassigned
+              ? () {
+                  FeedbackHelper.showWarning(
+                    context,
+                    'This booth is not available for booking yet.',
+                  );
+                }
+              : (isAvailable
+                  ? (widget.exhibition.isBookingOpen
+                      ? () => setState(() => _selectedSpot = spot)
+                      : () {
+                          FeedbackHelper.showWarning(
+                            context,
+                            'Booking is currently closed for this exhibition.',
+                          );
+                        })
+                  : null),
         ),
       );
     }
@@ -1294,7 +1302,7 @@ class _BoothApplicationFlowScreenState
 
   Widget _buildSuccessSummaryCard(
     BoothSpotModel spot,
-    BoothModel package,
+    BoothPackageModel package,
   ) {
     // Build summary card after successful submission.
     return Container(
@@ -1464,7 +1472,7 @@ class _BoothApplicationFlowScreenState
 
   Widget _buildApplicationFormStep() {
     // Get selected booth package and current user.
-    final boothProvider = context.watch<BoothProvider>();
+    final boothProvider = context.watch<BoothPackageProvider>();
     final authProvider = context.watch<AuthProvider>();
 
     final package = _selectedSpot != null
@@ -1760,7 +1768,7 @@ class _BoothApplicationFlowScreenState
 
   Widget _buildSummaryCard(
     BoothSpotModel spot,
-    BoothModel package,
+    BoothPackageModel package,
   ) {
     // Build selected booth summary inside form.
     return Container(
@@ -1900,7 +1908,7 @@ class _BoothApplicationFlowScreenState
 
   Widget _buildReviewStep() {
     // Build review page before final submission.
-    final boothProvider = context.watch<BoothProvider>();
+    final boothProvider = context.watch<BoothPackageProvider>();
     final authProvider = context.watch<AuthProvider>();
 
     final package = _selectedSpot != null
@@ -2192,7 +2200,7 @@ class _BoothApplicationFlowScreenState
 
   Widget _buildSuccessStep() {
     // Build final success page after submission.
-    final boothProvider = context.watch<BoothProvider>();
+    final boothProvider = context.watch<BoothPackageProvider>();
 
     final package = _selectedSpot != null
         ? boothProvider.boothPackages

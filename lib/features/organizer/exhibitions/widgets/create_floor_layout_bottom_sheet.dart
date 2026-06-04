@@ -6,7 +6,7 @@ import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/widgets/app_bottom_sheet_scaffold.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/bottom_sheet_dropdown_field.dart';
-import '../../../../providers/booth_provider.dart';
+import '../../../../providers/booth_package_provider.dart';
 import '../../../../providers/booth_spot_provider.dart';
 import '../../../../providers/exhibition_provider.dart';
 import '../../../../core/utils/feedback_helper.dart';
@@ -133,7 +133,7 @@ class _CreateFloorLayoutBottomSheetState extends State<CreateFloorLayoutBottomSh
 
   @override
   Widget build(BuildContext context) {
-    final boothProvider = context.watch<BoothProvider>();
+    final boothProvider = context.watch<BoothPackageProvider>();
     final packages = boothProvider.boothPackages;
 
     // Calculate layout preview dynamically

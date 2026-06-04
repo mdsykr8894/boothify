@@ -88,4 +88,15 @@ class UserService {
       return false;
     }
   }
+
+  Future<UserModel?> fetchUserById(String userId) async {
+    try {
+      final doc = await _firestore.collection(_collection).doc(userId).get();
+      if (!doc.exists) return null;
+      return UserModel.fromMap(doc.data()!, doc.id);
+    } catch (e) {
+      debugPrint('Error fetching user by ID: $e');
+      return null;
+    }
+  }
 }

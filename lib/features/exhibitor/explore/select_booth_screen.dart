@@ -12,7 +12,7 @@ import '../../../core/widgets/app_page_header.dart';
 import '../../../data/models/booth_spot_model.dart';
 import '../../../data/models/exhibition_model.dart';
 import '../../../providers/auth_provider.dart';
-import '../../../providers/booth_provider.dart';
+import '../../../providers/booth_package_provider.dart';
 import '../../../providers/booth_spot_provider.dart';
 import 'widgets/public_booth_spot_card.dart';
 import '../../../core/utils/feedback_helper.dart';
@@ -48,15 +48,14 @@ class _SelectBoothScreenState extends State<SelectBoothScreen> {
     context.read<BoothSpotProvider>().fetchBoothSpots(widget.exhibition.id);
 
     // Load booth packages for this exhibition.
-    context.read<BoothProvider>().fetchBoothPackages(widget.exhibition.id);
+    context.read<BoothPackageProvider>().fetchBoothPackages(widget.exhibition.id);
   }
 
   Widget _buildOverviewCard(List<BoothSpotModel> spots) {
-    // Count selected, available, and booked booth spots.
     final int selectedCount = _selectedSpot != null ? 1 : 0;
     final int availableCount =
-        spots.where((s) => s.status == 'Available').length - selectedCount;
-    final int bookedCount = spots.where((s) => s.status != 'Available').length;
+        spots.where((s) => s.status == 'Available' && s.boothPackageId.isNotEmpty).length - selectedCount;
+    final int bookedCount = spots.where((s) => s.status != 'Available' || (s.status == 'Available' && s.boothPackageId.isEmpty)).length;
 
     return Padding(
       padding: const EdgeInsets.symmetric(
@@ -250,7 +249,7 @@ class _SelectBoothScreenState extends State<SelectBoothScreen> {
   Widget build(BuildContext context) {
     // Get booth spot and package data from providers.
     final spotProvider = context.watch<BoothSpotProvider>();
-    final boothProvider = context.watch<BoothProvider>();
+    final boothProvider = context.watch<BoothPackageProvider>();
 
     final spots = spotProvider.boothSpots;
     final isLoading = spotProvider.isLoading || boothProvider.isLoading;
@@ -338,6 +337,7 @@ class _SelectBoothScreenState extends State<SelectBoothScreen> {
       // Build selectable booth spot tile.
       final isSelected = _selectedSpot?.id == spot.id;
       final isAvailable = spot.status == 'Available';
+      final isUnassigned = spot.boothPackageId.isEmpty;
 
       return Container(
         width: 145,
@@ -346,16 +346,23 @@ class _SelectBoothScreenState extends State<SelectBoothScreen> {
         child: PublicBoothSpotCard(
           spot: spot,
           isSelected: isSelected,
-          onTap: isAvailable
-              ? (widget.exhibition.isBookingOpen
-                  ? () => setState(() => _selectedSpot = spot)
-                  : () {
-                      FeedbackHelper.showWarning(
-                        context,
-                        'Booking is currently closed for this exhibition.',
-                      );
-                    })
-              : null,
+          onTap: isUnassigned
+              ? () {
+                  FeedbackHelper.showWarning(
+                    context,
+                    'This booth is not available for booking yet.',
+                  );
+                }
+              : (isAvailable
+                  ? (widget.exhibition.isBookingOpen
+                      ? () => setState(() => _selectedSpot = spot)
+                      : () {
+                          FeedbackHelper.showWarning(
+                            context,
+                            'Booking is currently closed for this exhibition.',
+                          );
+                        })
+                  : null),
         ),
       );
     }
@@ -540,7 +547,7 @@ class _SelectBoothScreenState extends State<SelectBoothScreen> {
         child: widget.exhibition.isBookingOpen
             ? AppButton(
                 text: _selectedSpot == null ? 'Select a Booth' : 'Continue',
-                onPressed: _selectedSpot == null
+                onPressed: (_selectedSpot == null || _selectedSpot!.boothPackageId.isEmpty)
                     ? null
                     : () {
                         // Find package linked to selected booth spot.

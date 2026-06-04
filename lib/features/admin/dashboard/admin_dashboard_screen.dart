@@ -11,6 +11,8 @@ import '../../../providers/auth_provider.dart';
 import '../../../providers/exhibition_provider.dart';
 import '../../../providers/user_provider.dart';
 import '../../shared/wrappers/admin_wrapper.dart';
+import '../../../providers/notification_provider.dart';
+import '../../shared/notifications/widgets/notification_bell_button.dart';
 
 // Display admin dashboard overview.
 class AdminDashboardScreen extends StatefulWidget {
@@ -23,6 +25,7 @@ class AdminDashboardScreen extends StatefulWidget {
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   // Track whether dashboard data has been fetched.
   bool _hasFetched = false;
+  NotificationProvider? _notificationProvider;
 
   @override
   void initState() {
@@ -34,11 +37,20 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     super.didChangeDependencies();
 
     final auth = context.watch<AuthProvider>();
+    final user = auth.currentUser;
+
+    _notificationProvider ??= context.read<NotificationProvider>();
+
+    if (user != null) {
+      _notificationProvider?.subscribeToNotifications(user.uid);
+    } else {
+      _notificationProvider?.unsubscribe();
+    }
 
     // Reset fetch state when admin session is unavailable.
     if (!auth.isInitialized ||
-        auth.currentUser == null ||
-        auth.currentUser?.role != 'Admin') {
+        user == null ||
+        user.role != 'Admin') {
       _hasFetched = false;
     } else if (!_hasFetched) {
       _hasFetched = true;
@@ -49,6 +61,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         _fetchData();
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _notificationProvider?.unsubscribe();
+    super.dispose();
   }
 
   void _fetchData() {
@@ -291,7 +309,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            const AppPageHeader(title: 'Dashboard'),
+            const AppPageHeader(
+              title: 'Dashboard',
+              actions: [
+                NotificationBellButton(),
+              ],
+            ),
             Expanded(
               child: isLoading
                   ? const AppLoading()

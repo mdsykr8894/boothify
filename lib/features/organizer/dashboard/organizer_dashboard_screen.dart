@@ -12,6 +12,8 @@ import '../../../providers/application_provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/exhibition_provider.dart';
 import '../../shared/wrappers/organizer_wrapper.dart';
+import '../../../providers/notification_provider.dart';
+import '../../shared/notifications/widgets/notification_bell_button.dart';
 
 // Display organizer dashboard overview.
 class OrganizerDashboardScreen extends StatefulWidget {
@@ -25,6 +27,7 @@ class OrganizerDashboardScreen extends StatefulWidget {
 class _OrganizerDashboardScreenState extends State<OrganizerDashboardScreen> {
   // Track last organizer data fetch.
   String? _lastFetchedUserId;
+  NotificationProvider? _notificationProvider;
 
   @override
   void initState() {
@@ -36,6 +39,14 @@ class _OrganizerDashboardScreenState extends State<OrganizerDashboardScreen> {
     super.didChangeDependencies();
 
     final user = context.watch<AuthProvider>().currentUser;
+
+    _notificationProvider ??= context.read<NotificationProvider>();
+
+    if (user != null) {
+      _notificationProvider?.subscribeToNotifications(user.uid);
+    } else {
+      _notificationProvider?.unsubscribe();
+    }
 
     // Reset fetch state when user logs out.
     if (user == null) {
@@ -49,6 +60,12 @@ class _OrganizerDashboardScreenState extends State<OrganizerDashboardScreen> {
         _fetchData();
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _notificationProvider?.unsubscribe();
+    super.dispose();
   }
 
   void _fetchData() {
@@ -290,7 +307,12 @@ class _OrganizerDashboardScreenState extends State<OrganizerDashboardScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            const AppPageHeader(title: 'Dashboard'),
+            const AppPageHeader(
+              title: 'Dashboard',
+              actions: [
+                NotificationBellButton(),
+              ],
+            ),
             Expanded(
               child: isLoading
                   ? const AppLoading()

@@ -2,22 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../data/models/booth_spot_model.dart';
-import '../../../../providers/booth_provider.dart';
+import '../../../../data/models/exhibition_model.dart';
+import '../../../../providers/booth_package_provider.dart';
 import '../../../../providers/booth_spot_provider.dart';
-import '../../../../providers/exhibition_provider.dart';
 import '../../../../core/widgets/base_dialog.dart';
 import 'booth_spot_bottom_sheet.dart';
 import '../../../../core/utils/feedback_helper.dart';
 
 class BoothSpotCard extends StatelessWidget {
   final BoothSpotModel spot;
-  final String exhibitionId;
+  final ExhibitionModel exhibition;
   final bool compact;
 
   const BoothSpotCard({
     super.key,
     required this.spot,
-    required this.exhibitionId,
+    required this.exhibition,
     this.compact = false,
   });
 
@@ -42,11 +42,6 @@ class BoothSpotCard extends StatelessWidget {
 
   void _showEditSheet(BuildContext context) {
     final spots = context.read<BoothSpotProvider>().boothSpots;
-    final exhibitionProvider = context.read<ExhibitionProvider>();
-    
-    final exhibition = exhibitionProvider.organizerExhibitions.firstWhere(
-      (e) => e.id == exhibitionId,
-    );
 
     int maxRow = 0;
     int maxCol = 0;
@@ -65,7 +60,7 @@ class BoothSpotCard extends StatelessWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => BoothSpotBottomSheet(
-        exhibitionId: exhibitionId,
+        exhibitionId: exhibition.id,
         spot: spot,
         rows: rowsCount,
         columns: columnsCount,
@@ -91,7 +86,7 @@ class BoothSpotCard extends StatelessWidget {
       onPrimaryPressed: () async {
         Navigator.pop(context);
         final provider = context.read<BoothSpotProvider>();
-        final success = await provider.deleteBoothSpot(spot.id, exhibitionId);
+        final success = await provider.deleteBoothSpot(spot.id, exhibition.id);
         if (context.mounted) {
           if (success) {
             FeedbackHelper.showSuccess(
@@ -111,7 +106,7 @@ class BoothSpotCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final boothProvider = context.watch<BoothProvider>();
+    final boothProvider = context.watch<BoothPackageProvider>();
     final packageName = spot.boothPackageId.isEmpty
         ? 'Unassigned'
         : (boothProvider.boothPackages

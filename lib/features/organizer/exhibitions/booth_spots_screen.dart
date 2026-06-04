@@ -7,7 +7,7 @@ import '../../../core/widgets/app_loading.dart';
 import '../../../core/widgets/app_page_header.dart';
 import '../../../data/models/exhibition_model.dart';
 import '../../../data/models/booth_spot_model.dart';
-import '../../../providers/booth_provider.dart';
+import '../../../providers/booth_package_provider.dart';
 import '../../../providers/booth_spot_provider.dart';
 import '../../../providers/exhibition_provider.dart';
 import 'widgets/booth_spot_bottom_sheet.dart';
@@ -40,7 +40,7 @@ class _BoothSpotsScreenState extends State<BoothSpotsScreen> {
   void _fetchData() {
     // Load floor plan spots and booth packages.
     context.read<BoothSpotProvider>().fetchBoothSpots(widget.exhibition.id);
-    context.read<BoothProvider>().fetchBoothPackages(widget.exhibition.id);
+    context.read<BoothPackageProvider>().fetchBoothPackages(widget.exhibition.id);
   }
 
   void _showAddSpotSheet(
@@ -159,7 +159,7 @@ class _BoothSpotsScreenState extends State<BoothSpotsScreen> {
   @override
   Widget build(BuildContext context) {
     final spotProvider = context.watch<BoothSpotProvider>();
-    final boothProvider = context.watch<BoothProvider>();
+    final boothProvider = context.watch<BoothPackageProvider>();
     final exhibitionProvider = context.watch<ExhibitionProvider>();
 
     final spots = spotProvider.boothSpots;
@@ -277,7 +277,7 @@ class _BoothSpotsScreenState extends State<BoothSpotsScreen> {
                       message: 'Create booth locations and assign packages.',
                       icon: Icons.map_outlined,
                     )
-                  : _buildFloorPlanCanvas(spots, rowsCount, columnsCount),
+                  : _buildFloorPlanCanvas(exhibition, spots, rowsCount, columnsCount),
             ),
           ],
         ),
@@ -329,6 +329,7 @@ class _BoothSpotsScreenState extends State<BoothSpotsScreen> {
   }
 
   Widget _buildFloorPlanCanvas(
+    ExhibitionModel exhibition,
     List<BoothSpotModel> spots,
     int rowsCount,
     int columnsCount,
@@ -396,7 +397,7 @@ class _BoothSpotsScreenState extends State<BoothSpotsScreen> {
         margin: const EdgeInsets.all(5),
         child: BoothSpotCard(
           spot: spot,
-          exhibitionId: widget.exhibition.id,
+          exhibition: exhibition,
           compact: true,
         ),
       );

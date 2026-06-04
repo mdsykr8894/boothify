@@ -8,82 +8,86 @@ It allows administrators to manage the platform, organizers to manage exhibition
 
 ### Guest
 
-* Browse published exhibitions without logging in
-* View exhibition details
-* View a read-only booth floor plan
-* Receive login/register guidance before making a booth application
+- Browse published exhibitions without logging in
+- View exhibition details
+- View a read-only booth floor plan
+- Receive login/register guidance before making a booth application
 
 ### Exhibitor
 
-* Register and log in as an exhibitor
-* Browse and search published exhibitions
-* View exhibition details and booth packages
-* Select booth spots from an interactive matrix floor plan
-* View booth availability using color-coded booth statuses
-* Submit booth applications with company details, product details, add-ons, and participation dates
-* Track application status
-* Edit pending applications
-* Cancel applications where allowed
-* Make simulated payment after approval
+- Register and log in as an exhibitor
+- Browse and search published exhibitions
+- View exhibition details and booth packages
+- Select booth spots from an interactive matrix floor plan
+- View booth availability using color-coded booth statuses
+- Submit booth applications with company details, product details, add-ons, and participation dates
+- Track application status
+- Edit pending or rejected applications where allowed
+- Cancel applications where allowed
+- Make simulated payment after approval
+- Receive in-app notifications for application and payment updates
 
 ### Organizer
 
-* Create and manage their own exhibition events
-* Edit exhibition details while the exhibition is still unpublished
-* Manage booth packages, including size, price, and amenities
-* Open or close booking availability
-* View exhibition and application summaries
-* Review exhibitor applications
-* Approve or reject applications with reasons
-* Delete own exhibitions safely when no applications exist
+- Create and manage their own exhibition events
+- Edit exhibition details while the exhibition is still unpublished
+- Manage booth packages, including size, price, and amenities
+- Manage booth spots and floor layout for their own exhibitions
+- Open or close booking availability
+- View exhibition and application summaries
+- Review exhibitor applications
+- Approve or reject applications with reasons
+- Receive in-app notifications for application updates
+- Delete own exhibitions safely with related booth package and booth spot cleanup
 
-Organizers do not directly publish or unpublish exhibitions. They also do not manage the floor plan layout. These actions are controlled by the administrator to maintain platform-level moderation.
+Organizers manage their own exhibition information, booth packages, and booth spots. Administrators control platform-level moderation such as publication status, user management, and overall application management.
 
 ### Admin
 
-* View and manage all exhibitions
-* Publish or unpublish exhibitions
-* Manage floor plan layouts
-* Manage booth spots and floor grid mapping
-* Manage all users
-* Activate or deactivate user accounts
-* View and manage all applications
-* Edit application details when required
-* Monitor overall platform data
+- View and manage all exhibitions
+- Publish or unpublish exhibitions
+- Manage all users
+- Activate or deactivate user accounts
+- View and manage all applications
+- Edit application details when required
+- Monitor overall platform data
+- Receive in-app notifications for new user registrations, new exhibitions, and platform activity
 
 ## Core Technical Highlights
 
-* Basic search and filter functions
-* Role-based routing for Guest, Exhibitor, Organizer, and Admin
-* Firebase Authentication for user login and registration
-* Cloud Firestore as the main database
-* Firebase Storage for exhibition images
-* Provider state management
-* GoRouter navigation and route guards
-* Interactive booth floor plan using a matrix layout
-* Firestore transaction-based booth application submission
-* Competitor adjacency validation to prevent similar business types from booking adjacent booths
-* Participation date selection within the exhibition date range
-* Safe exhibition deletion with related booth package and booth spot cleanup
-* Published exhibition edit lock to prevent editing public event details directly
-* Lifecycle-safe data loading after app restart or Firebase session restore
-* Simulated payment flow after application approval
+- Basic search and filter functions
+- Role-based routing for Guest, Exhibitor, Organizer, and Admin
+- Firebase Authentication for user login and registration
+- Cloud Firestore as the main database
+- Firebase Storage for exhibition images
+- Provider state management
+- GoRouter navigation and route guards
+- Interactive booth floor plan using a matrix layout
+- Firestore transaction-based booth application submission
+- Double-booking prevention using Firestore transactions
+- Competitor adjacency validation to prevent similar business types from booking adjacent booths
+- Participation date selection within the exhibition date range
+- Safe exhibition deletion with related booth package and booth spot cleanup
+- Published exhibition edit lock to prevent editing public event details directly
+- Lifecycle-safe data loading after app restart or Firebase session restore
+- Simulated payment flow after application approval
+- In-app notification system with read and mark-all-as-read support
 
 ## Tech Stack
 
-* Flutter
-* Dart
-* Firebase Authentication
-* Cloud Firestore
-* Firebase Storage
-* Provider
-* GoRouter
-* Cached Network Image
-* Flutter SVG
-* Image Picker
-* Intl
-* Flutter Native Splash
-* Flutter Launcher Icons
+- Flutter
+- Dart
+- Firebase Authentication
+- Cloud Firestore
+- Firebase Storage
+- Provider
+- GoRouter
+- Cached Network Image
+- Flutter SVG
+- Image Picker
+- Intl
+- Flutter Native Splash
+- Flutter Launcher Icons
 
 ## Project Structure
 
@@ -124,7 +128,7 @@ Administrators can also manage booth packages at the system level.
 
 ### Floor Plan Management
 
-Boothify uses an interactive matrix-based floor plan. The administrator can configure rows, columns, booth spots, and layout mapping.
+Boothify uses an interactive matrix-based floor plan. Organizers can manage booth spots and floor layout for their own exhibitions, while administrators maintain platform-level access and moderation.
 
 Booth spots are displayed using coordinate labels such as:
 
@@ -140,10 +144,10 @@ Exhibitors can view the spatial booth layout and select available booth spots.
 
 Booth statuses are color-coded for clarity:
 
-* Available
-* Pending
-* Booked
-* Selected
+- Available
+- Pending
+- Booked
+- Selected
 
 ### Application Management
 
@@ -165,17 +169,24 @@ These dates are used for organizer and admin reference only. Booth package prici
 
 After an application is approved, exhibitors can perform a simulated payment. The system stores payment information such as payment method, payment date, and transaction ID.
 
+### Notification Management
+
+Boothify includes an in-app notification system. Users can receive notifications for important activities such as new registrations, exhibition updates, application submissions, approval or rejection results, withdrawn applications, resubmitted applications, and payment completion.
+
+Notifications can be marked as read individually or all at once.
+
 ## Database Overview
 
 Boothify uses Firebase Cloud Firestore as the main database.
 
 The logical database can be described as `exhibition_booth_management`, with the following main collections:
 
-* `users`
-* `exhibitions`
-* `booth_packages`
-* `booth_spots`
-* `applications`
+- `users`
+- `exhibitions`
+- `booth_packages`
+- `booth_spots`
+- `applications`
+- `notifications`
 
 These collections act as logical database tables for the application.
 
@@ -185,13 +196,13 @@ These collections act as logical database tables for the application.
 
 Make sure the following tools are installed:
 
-* Flutter SDK
-* Dart SDK
-* Android Studio or Visual Studio Code
-* Node.js and npm
-* Firebase CLI
-* FlutterFire CLI
-* A Firebase account
+- Flutter SDK
+- Dart SDK
+- Android Studio or Visual Studio Code
+- Node.js and npm
+- Firebase CLI
+- FlutterFire CLI
+- A Firebase account
 
 Check Flutter installation:
 
@@ -356,6 +367,7 @@ exhibitions
 booth_packages
 booth_spots
 applications
+notifications
 ```
 
 ### Step 8: Enable Firebase Storage
@@ -407,7 +419,7 @@ After setup, test the following flow:
 2. Create organizer and exhibitor accounts.
 3. Log in as Organizer and create an exhibition.
 4. Add booth packages.
-5. Log in as Admin and configure the floor plan.
+5. Configure booth spots and floor layout.
 6. Publish the exhibition as Admin.
 7. Log in as Exhibitor.
 8. Browse the published exhibition.
@@ -415,17 +427,21 @@ After setup, test the following flow:
 10. Log in as Organizer and approve or reject the application.
 11. Log in as Exhibitor and check the application status.
 12. Make payment after approval.
-13. Log in as Admin and verify users, exhibitions, and applications.
+13. Check notification updates for each related role.
+14. Log in as Admin and verify users, exhibitions, and applications.
 
 ## Notes
 
-* Firebase configuration files are not committed for security reasons.
-* You must configure your own Firebase project before running the app fully.
-* Some Firebase rules may need to be adjusted depending on your testing environment.
-* The notification screen exists as a user interface area, while full push notification support can be added as a future enhancement.
-* The floor plan uses an interactive matrix layout rather than a static uploaded image map.
-* Organizers can manage their own exhibition information and booth packages, while administrators control publication and floor plan mapping.
-* Published exhibitions are read-only until they are unpublished by an administrator.
+- Firebase configuration files are not committed for security reasons.
+- You must configure your own Firebase project before running the app fully.
+- Some Firebase rules may need to be adjusted depending on your testing environment.
+- Boothify currently uses in-app notifications stored in Firestore. Full push notification support can be added as a future enhancement.
+- The floor plan uses an interactive matrix layout rather than a static uploaded image map.
+- Booth packages are stored in the `booth_packages` collection.
+- Booth spots are stored in the `booth_spots` collection and reference booth packages using `boothPackageId`.
+- Organizers can manage their own exhibition information, booth packages, and booth spots.
+- Administrators control publication status, user management, and platform-level application management.
+- Published exhibitions are read-only until they are unpublished by an administrator.
 
 ## Purpose
 
@@ -433,4 +449,4 @@ The purpose of Boothify is to provide a mobile platform for managing exhibition 
 
 Boothify helps administrators manage the platform, organizers manage exhibition operations, and exhibitors submit booth applications through an interactive booth selection flow.
 
-The project demonstrates the use of Flutter, Firebase, state management, routing, role-based access control, Firestore database design, transaction-based validation, and interactive UI design in a complete mobile application workflow.
+The project demonstrates the use of Flutter, Firebase, state management, routing, role-based access control, Firestore database design, transaction-based validation, notification handling, and interactive UI design in a complete mobile application workflow.

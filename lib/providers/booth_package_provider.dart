@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import '../data/models/booth_model.dart';
-import '../data/services/booth_service.dart';
+import '../data/models/booth_package_model.dart';
+import '../data/services/booth_package_service.dart';
 
-class BoothProvider extends ChangeNotifier {
-  final BoothService _service = BoothService();
+class BoothPackageProvider extends ChangeNotifier {
+  final BoothPackageService _service = BoothPackageService();
 
   // Store booth packages for selected exhibition.
-  List<BoothModel> _boothPackages = [];
+  List<BoothPackageModel> _boothPackages = [];
 
   // Track loading state for UI.
   bool _isLoading = false;
@@ -14,7 +14,7 @@ class BoothProvider extends ChangeNotifier {
   // Store error message for UI feedback.
   String? _errorMessage;
 
-  List<BoothModel> get boothPackages => _boothPackages;
+  List<BoothPackageModel> get boothPackages => _boothPackages;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
@@ -32,7 +32,7 @@ class BoothProvider extends ChangeNotifier {
     _setLoading(false);
   }
 
-  Future<bool> createBoothPackage(BoothModel booth) async {
+  Future<bool> createBoothPackage(BoothPackageModel booth) async {
     // Create new booth package.
     _setLoading(true);
     _errorMessage = null;
@@ -54,7 +54,7 @@ class BoothProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> updateBoothPackage(BoothModel booth) async {
+  Future<bool> updateBoothPackage(BoothPackageModel booth) async {
     // Update existing booth package.
     _setLoading(true);
     _errorMessage = null;

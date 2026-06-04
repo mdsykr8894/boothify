@@ -6,7 +6,7 @@ import '../../../../core/widgets/app_bottom_sheet_scaffold.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/bottom_sheet_dropdown_field.dart';
 import '../../../../data/models/booth_spot_model.dart';
-import '../../../../providers/booth_provider.dart';
+import '../../../../providers/booth_package_provider.dart';
 import '../../../../providers/booth_spot_provider.dart';
 
 class BoothSpotBottomSheet extends StatefulWidget {
@@ -156,7 +156,7 @@ class _BoothSpotBottomSheetState extends State<BoothSpotBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final boothProvider = context.watch<BoothProvider>();
+    final boothProvider = context.watch<BoothPackageProvider>();
     final spotProvider = context.watch<BoothSpotProvider>();
     final packages = boothProvider.boothPackages;
     final isLoading = spotProvider.isLoading || boothProvider.isLoading;
